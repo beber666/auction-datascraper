@@ -32,6 +32,41 @@ export class ScraperService {
     return this.exchangeRates;
   }
 
+  private static async translateJapaneseText(text: string): Promise<string> {
+    try {
+      // Check if text contains Japanese characters using regex
+      const hasJapanese = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(text);
+      
+      if (!hasJapanese) {
+        return text;
+      }
+
+      const response = await fetch('https://api-free.deepl.com/v2/translate', {
+        method: 'POST',
+        headers: {
+          'Authorization': 'DeepL-Auth-Key YOUR_API_KEY',
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          text,
+          target_lang: 'EN',
+          source_lang: 'JA',
+        }),
+      });
+
+      if (!response.ok) {
+        console.error('Translation failed:', await response.text());
+        return text;
+      }
+
+      const data = await response.json();
+      return data.translations[0].text;
+    } catch (error) {
+      console.error('Translation error:', error);
+      return text; // Return original text if translation fails
+    }
+  }
+
   static async convertPrice(priceInJPY: number, targetCurrency: string): Promise<string> {
     const rates = await this.fetchExchangeRates();
     if (!rates || !rates.rates[targetCurrency]) {
@@ -61,7 +96,9 @@ export class ScraperService {
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.contents, 'text/html');
 
-      const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
+      const productNameRaw = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
+      const productName = await this.translateJapaneseText(productNameRaw);
+      
       const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
       const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''));
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
