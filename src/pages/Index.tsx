@@ -3,20 +3,26 @@ import { AuctionItem, ScraperService } from "@/services/scraper";
 import { UrlForm } from "@/components/UrlForm";
 import { AuctionTable } from "@/components/AuctionTable";
 import { useToast } from "@/components/ui/use-toast";
+import { SettingsPanel } from "@/components/SettingsPanel";
 
 const Index = () => {
   const [items, setItems] = useState<AuctionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(true);
+  const [refreshInterval, setRefreshInterval] = useState(1);
+  const [currency, setCurrency] = useState("JPY");
   const { toast } = useToast();
 
   const refreshAuctions = async () => {
     const updatedItems = await Promise.all(
       items.map(async (item) => {
         try {
-          return await ScraperService.scrapeZenmarket(item.url);
+          const newItem = await ScraperService.scrapeZenmarket(item.url);
+          newItem.currentPrice = await ScraperService.convertPrice(newItem.priceInJPY, currency);
+          return newItem;
         } catch (error) {
           console.error(`Failed to refresh auction ${item.url}:`, error);
-          return item; // Keep the old item data if refresh fails
+          return item;
         }
       })
     );
@@ -25,22 +31,40 @@ const Index = () => {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      if (items.length > 0) {
+      if (items.length > 0 && autoRefresh) {
         refreshAuctions();
         toast({
           title: "Refresh",
           description: "Auction data updated",
         });
       }
-    }, 60000); // 60000ms = 1 minute
+    }, refreshInterval * 60000);
 
     return () => clearInterval(interval);
-  }, [items]);
+  }, [items, autoRefresh, refreshInterval, currency]);
+
+  // Update prices when currency changes
+  useEffect(() => {
+    const updatePrices = async () => {
+      const updatedItems = await Promise.all(
+        items.map(async (item) => ({
+          ...item,
+          currentPrice: await ScraperService.convertPrice(item.priceInJPY, currency),
+        }))
+      );
+      setItems(updatedItems);
+    };
+
+    if (items.length > 0) {
+      updatePrices();
+    }
+  }, [currency]);
 
   const handleSubmit = async (url: string) => {
     setIsLoading(true);
     try {
       const item = await ScraperService.scrapeZenmarket(url);
+      item.currentPrice = await ScraperService.convertPrice(item.priceInJPY, currency);
       setItems((prev) => [...prev, item]);
       toast({
         title: "Success",
@@ -71,6 +95,14 @@ const Index = () => {
         Zenmarket Auction Tracker
       </h1>
       <div className="max-w-3xl mx-auto space-y-8">
+        <SettingsPanel
+          autoRefresh={autoRefresh}
+          refreshInterval={refreshInterval}
+          currency={currency}
+          onAutoRefreshChange={setAutoRefresh}
+          onRefreshIntervalChange={setRefreshInterval}
+          onCurrencyChange={setCurrency}
+        />
         <UrlForm onSubmit={handleSubmit} isLoading={isLoading} />
         {items.length > 0 ? (
           <AuctionTable items={items} onDelete={handleDelete} />

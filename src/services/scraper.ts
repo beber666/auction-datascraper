@@ -3,12 +3,52 @@ export interface AuctionItem {
   url: string;
   productName: string;
   currentPrice: string;
+  priceInJPY: number;
   numberOfBids: string;
   timeRemaining: string;
   lastUpdated: Date;
 }
 
+interface ExchangeRates {
+  rates: {
+    [key: string]: number;
+  };
+}
+
 export class ScraperService {
+  private static exchangeRates: ExchangeRates | null = null;
+  private static lastRatesFetch: Date | null = null;
+
+  private static async fetchExchangeRates() {
+    if (
+      !this.exchangeRates ||
+      !this.lastRatesFetch ||
+      Date.now() - this.lastRatesFetch.getTime() > 3600000 // Refresh rates every hour
+    ) {
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
+      this.exchangeRates = await response.json();
+      this.lastRatesFetch = new Date();
+    }
+    return this.exchangeRates;
+  }
+
+  static async convertPrice(priceInJPY: number, targetCurrency: string): Promise<string> {
+    const rates = await this.fetchExchangeRates();
+    if (!rates || !rates.rates[targetCurrency]) {
+      return `${priceInJPY} ¥`;
+    }
+
+    const convertedPrice = priceInJPY * rates.rates[targetCurrency];
+    const currencySymbols: { [key: string]: string } = {
+      JPY: '¥',
+      EUR: '€',
+      USD: '$',
+      GBP: '£'
+    };
+
+    return `${currencySymbols[targetCurrency]}${convertedPrice.toFixed(2)}`;
+  }
+
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
     try {
       const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
@@ -22,7 +62,8 @@ export class ScraperService {
       const doc = parser.parseFromString(data.contents, 'text/html');
 
       const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
-      const currentPrice = doc.querySelector('#lblPriceY')?.textContent?.trim() || 'N/A';
+      const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
+      const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''));
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
       const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
 
@@ -30,7 +71,8 @@ export class ScraperService {
         id: Math.random().toString(36).substr(2, 9),
         url,
         productName,
-        currentPrice,
+        currentPrice: `¥${priceInJPY.toLocaleString()}`,
+        priceInJPY,
         numberOfBids,
         timeRemaining,
         lastUpdated: new Date(),
