@@ -41,18 +41,10 @@ export class ScraperService {
         return text;
       }
 
-      const response = await fetch('https://api-free.deepl.com/v2/translate', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'DeepL-Auth-Key YOUR_API_KEY',
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({
-          text,
-          target_lang: 'EN',
-          source_lang: 'JA',
-        }),
-      });
+      const encodedText = encodeURIComponent(text);
+      const response = await fetch(
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=en&dt=t&q=${encodedText}`
+      );
 
       if (!response.ok) {
         console.error('Translation failed:', await response.text());
@@ -60,7 +52,8 @@ export class ScraperService {
       }
 
       const data = await response.json();
-      return data.translations[0].text;
+      // The translation is in the first element of the first array
+      return data[0][0][0];
     } catch (error) {
       console.error('Translation error:', error);
       return text; // Return original text if translation fails
