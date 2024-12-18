@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { AuctionItem, ScraperService } from "@/services/scraper";
 import { UrlForm } from "@/components/UrlForm";
 import { AuctionTable } from "@/components/AuctionTable";
@@ -8,6 +8,34 @@ const Index = () => {
   const [items, setItems] = useState<AuctionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
+
+  const refreshAuctions = async () => {
+    const updatedItems = await Promise.all(
+      items.map(async (item) => {
+        try {
+          return await ScraperService.scrapeZenmarket(item.url);
+        } catch (error) {
+          console.error(`Failed to refresh auction ${item.url}:`, error);
+          return item; // Keep the old item data if refresh fails
+        }
+      })
+    );
+    setItems(updatedItems);
+  };
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      if (items.length > 0) {
+        refreshAuctions();
+        toast({
+          title: "Refresh",
+          description: "Auction data updated",
+        });
+      }
+    }, 60000); // 60000ms = 1 minute
+
+    return () => clearInterval(interval);
+  }, [items]);
 
   const handleSubmit = async (url: string) => {
     setIsLoading(true);
