@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AuctionItem } from "@/services/scraper";
-import { ExternalLink, Trash2, Loader2, Bell, BellOff } from "lucide-react";
+import { ExternalLink, Trash2, Loader2, Bell, BellOff, ImageOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,6 +21,7 @@ interface AuctionTableProps {
 export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
   const [alertedAuctions, setAlertedAuctions] = useState<string[]>([]);
   const { toast } = useToast();
+  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchAlertedAuctions = async () => {
@@ -39,6 +40,10 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
 
     fetchAlertedAuctions();
   }, []);
+
+  const handleImageError = (itemId: string) => {
+    setImageErrors(prev => new Set(prev).add(itemId));
+  };
 
   const toggleAlert = async (auctionId: string) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -116,12 +121,23 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
           {items.map((item) => (
             <TableRow key={item.id} className={item.isLoading ? "opacity-60" : ""}>
               <TableCell>
-                {item.imageUrl && (
-                  <img 
-                    src={item.imageUrl} 
-                    alt={item.productName}
-                    className="w-20 h-20 object-cover rounded-md"
-                  />
+                {item.imageUrl ? (
+                  imageErrors.has(item.id) ? (
+                    <div className="w-20 h-20 bg-muted flex items-center justify-center rounded-md">
+                      <ImageOff className="h-8 w-8 text-muted-foreground" />
+                    </div>
+                  ) : (
+                    <img 
+                      src={item.imageUrl} 
+                      alt={item.productName}
+                      className="w-20 h-20 object-cover rounded-md"
+                      onError={() => handleImageError(item.id)}
+                    />
+                  )
+                ) : (
+                  <div className="w-20 h-20 bg-muted flex items-center justify-center rounded-md">
+                    <ImageOff className="h-8 w-8 text-muted-foreground" />
+                  </div>
                 )}
               </TableCell>
               <TableCell className="font-medium">
