@@ -104,6 +104,7 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
+            <TableHead>Image</TableHead>
             <TableHead>Product Name</TableHead>
             <TableHead>Current Price</TableHead>
             <TableHead className="text-center">Bids</TableHead>
@@ -114,6 +115,15 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
         <TableBody>
           {items.map((item) => (
             <TableRow key={item.id} className={item.isLoading ? "opacity-60" : ""}>
+              <TableCell>
+                {item.imageUrl && (
+                  <img 
+                    src={item.imageUrl} 
+                    alt={item.productName}
+                    className="w-20 h-20 object-cover rounded-md"
+                  />
+                )}
+              </TableCell>
               <TableCell className="font-medium">
                 {item.isLoading ? (
                   <div className="flex items-center gap-2">

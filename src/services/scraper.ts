@@ -7,6 +7,7 @@ export interface AuctionItem {
   numberOfBids: string;
   timeRemaining: string;
   lastUpdated: Date;
+  imageUrl?: string;
   isLoading?: boolean;
   user_id?: string;
   created_at?: string;
@@ -33,6 +34,42 @@ export class ScraperService {
       this.lastRatesFetch = new Date();
     }
     return this.exchangeRates;
+  }
+
+  static async scrapeZenmarket(url: string): Promise<AuctionItem> {
+    try {
+      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
+      const data = await response.json();
+      
+      if (!data.contents) {
+        throw new Error("Failed to fetch page contents");
+      }
+
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(data.contents, 'text/html');
+
+      const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
+      const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
+      const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''));
+      const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
+      const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
+      const imageUrl = doc.querySelector('#imgPreview')?.getAttribute('src') || '';
+
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        url,
+        productName,
+        currentPrice: `¥${priceInJPY.toLocaleString()}`,
+        priceInJPY,
+        numberOfBids,
+        timeRemaining,
+        lastUpdated: new Date(),
+        imageUrl,
+      };
+    } catch (error) {
+      console.error('Error scraping Zenmarket:', error);
+      throw new Error('Failed to scrape auction data');
+    }
   }
 
   static async translateText(text: string, targetLang: string): Promise<string> {
@@ -69,39 +106,5 @@ export class ScraperService {
     };
 
     return `${currencySymbols[targetCurrency]}${convertedPrice.toFixed(2)}`;
-  }
-
-  static async scrapeZenmarket(url: string): Promise<AuctionItem> {
-    try {
-      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-      const data = await response.json();
-      
-      if (!data.contents) {
-        throw new Error("Failed to fetch page contents");
-      }
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data.contents, 'text/html');
-
-      const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
-      const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
-      const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''));
-      const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
-      const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
-
-      return {
-        id: Math.random().toString(36).substr(2, 9),
-        url,
-        productName,
-        currentPrice: `¥${priceInJPY.toLocaleString()}`,
-        priceInJPY,
-        numberOfBids,
-        timeRemaining,
-        lastUpdated: new Date(),
-      };
-    } catch (error) {
-      console.error('Error scraping Zenmarket:', error);
-      throw new Error('Failed to scrape auction data');
-    }
   }
 }
