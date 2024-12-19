@@ -42,6 +42,7 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
   }, []);
 
   const handleImageError = (itemId: string) => {
+    console.error(`Image failed to load for item ${itemId}`);
     setImageErrors(prev => new Set(prev).add(itemId));
   };
 
@@ -109,7 +110,7 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Image</TableHead>
+            <TableHead className="w-[100px]">Image</TableHead>
             <TableHead>Product Name</TableHead>
             <TableHead>Current Price</TableHead>
             <TableHead className="text-center">Bids</TableHead>
@@ -120,22 +121,25 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
         <TableBody>
           {items.map((item) => (
             <TableRow key={item.id} className={item.isLoading ? "opacity-60" : ""}>
-              <TableCell>
+              <TableCell className="p-2">
                 {item.imageUrl ? (
-                  imageErrors.has(item.id) ? (
-                    <div className="w-20 h-20 bg-muted flex items-center justify-center rounded-md">
-                      <ImageOff className="h-8 w-8 text-muted-foreground" />
-                    </div>
-                  ) : (
-                    <img 
-                      src={item.imageUrl} 
-                      alt={item.productName}
-                      className="w-20 h-20 object-cover rounded-md"
-                      onError={() => handleImageError(item.id)}
-                    />
-                  )
+                  <div className="relative w-[100px] h-[100px]">
+                    {!imageErrors.has(item.id) ? (
+                      <img 
+                        src={item.imageUrl} 
+                        alt={item.productName}
+                        className="w-full h-full object-cover rounded-md"
+                        onError={() => handleImageError(item.id)}
+                        loading="lazy"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted flex items-center justify-center rounded-md">
+                        <ImageOff className="h-8 w-8 text-muted-foreground" />
+                      </div>
+                    )}
+                  </div>
                 ) : (
-                  <div className="w-20 h-20 bg-muted flex items-center justify-center rounded-md">
+                  <div className="w-[100px] h-[100px] bg-muted flex items-center justify-center rounded-md">
                     <ImageOff className="h-8 w-8 text-muted-foreground" />
                   </div>
                 )}
