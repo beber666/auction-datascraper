@@ -38,8 +38,18 @@ export class ScraperService {
 
   private static getProxiedImageUrl(originalUrl: string): string {
     if (!originalUrl) return '';
+    
+    // Clean and normalize the URL
+    let cleanUrl = originalUrl;
+    if (!cleanUrl.startsWith('http')) {
+      cleanUrl = `https:${cleanUrl}`;
+    }
+    
     const proxyUrl = 'https://yssapojsghmotbifhybq.supabase.co/functions/v1/proxy-image';
-    return `${proxyUrl}?url=${encodeURIComponent(originalUrl)}`;
+    console.log('Original image URL:', cleanUrl);
+    const proxiedUrl = `${proxyUrl}?url=${encodeURIComponent(cleanUrl)}`;
+    console.log('Proxied image URL:', proxiedUrl);
+    return proxiedUrl;
   }
 
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
@@ -67,10 +77,6 @@ export class ScraperService {
       
       if (imgElement) {
         imageUrl = imgElement.getAttribute('src') || '';
-        if (imageUrl && !imageUrl.startsWith('http')) {
-          const baseUrl = new URL(url).origin;
-          imageUrl = new URL(imageUrl, baseUrl).toString();
-        }
       } else {
         const alternativeImg = doc.querySelector('.item-image img') || 
                              doc.querySelector('.main-image img') ||
@@ -82,8 +88,6 @@ export class ScraperService {
 
       // Always proxy the image URL through our Edge Function
       const proxiedImageUrl = imageUrl ? this.getProxiedImageUrl(imageUrl) : '';
-      console.log('Original image URL:', imageUrl);
-      console.log('Proxied image URL:', proxiedImageUrl);
 
       const item: AuctionItem = {
         id: Math.random().toString(36).substr(2, 9),
