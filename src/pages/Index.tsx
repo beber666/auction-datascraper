@@ -35,7 +35,20 @@ const Index = () => {
         .eq("user_id", session.user.id);
 
       if (auctions) {
-        setItems(auctions);
+        // Map database fields to AuctionItem interface
+        const mappedAuctions: AuctionItem[] = auctions.map(auction => ({
+          id: auction.id,
+          url: auction.url,
+          productName: auction.product_name,
+          currentPrice: auction.current_price,
+          priceInJPY: auction.price_in_jpy,
+          numberOfBids: auction.number_of_bids,
+          timeRemaining: auction.time_remaining,
+          lastUpdated: new Date(auction.last_updated),
+          user_id: auction.user_id,
+          created_at: auction.created_at
+        }));
+        setItems(mappedAuctions);
       }
     };
     checkUser();
@@ -79,7 +92,14 @@ const Index = () => {
     for (const item of updatedItems) {
       await supabase
         .from("auctions")
-        .update(item)
+        .update({
+          product_name: item.productName,
+          current_price: item.currentPrice,
+          price_in_jpy: item.priceInJPY,
+          number_of_bids: item.numberOfBids,
+          time_remaining: item.timeRemaining,
+          last_updated: item.lastUpdated.toISOString(),
+        })
         .eq("id", item.id);
     }
   };
@@ -128,16 +148,39 @@ const Index = () => {
         );
       }
 
-      // Save to database
+      // Save to database with correct field mapping
       const { data: savedItem } = await supabase
         .from("auctions")
-        .insert([{ ...item, user_id: session.user.id }])
+        .insert([{
+          url: item.url,
+          product_name: item.productName,
+          current_price: item.currentPrice,
+          price_in_jpy: item.priceInJPY,
+          number_of_bids: item.numberOfBids,
+          time_remaining: item.timeRemaining,
+          last_updated: item.lastUpdated.toISOString(),
+          user_id: session.user.id
+        }])
         .select()
         .single();
 
       if (savedItem) {
+        // Map saved item back to AuctionItem interface
+        const mappedItem: AuctionItem = {
+          id: savedItem.id,
+          url: savedItem.url,
+          productName: savedItem.product_name,
+          currentPrice: savedItem.current_price,
+          priceInJPY: savedItem.price_in_jpy,
+          numberOfBids: savedItem.number_of_bids,
+          timeRemaining: savedItem.time_remaining,
+          lastUpdated: new Date(savedItem.last_updated),
+          user_id: savedItem.user_id,
+          created_at: savedItem.created_at
+        };
+
         setItems(prev => prev.map(i => 
-          i.id === tempItem.id ? savedItem : i
+          i.id === tempItem.id ? mappedItem : i
         ));
 
         toast({

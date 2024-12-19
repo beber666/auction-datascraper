@@ -8,6 +8,8 @@ export interface AuctionItem {
   timeRemaining: string;
   lastUpdated: Date;
   isLoading?: boolean;
+  user_id?: string;
+  created_at?: string;
 }
 
 interface ExchangeRates {
