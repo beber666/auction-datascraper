@@ -36,7 +36,7 @@ export const AlertSettings = () => {
         .eq('user_id', session.user.id)
         .maybeSingle();
 
-      if (error && error.code !== 'PGRST116') {
+      if (error) {
         toast({
           title: "Error",
           description: "Failed to load alert preferences",

@@ -3,6 +3,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { AccountForm } from "@/components/account/AccountForm";
+import { AlertSettings } from "@/components/AlertSettings";
 
 const Account = () => {
   const navigate = useNavigate();
@@ -29,7 +30,7 @@ const Account = () => {
         .from("profiles")
         .select("*")
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle();
 
       if (error) {
         console.error("Error fetching profile:", error);
@@ -85,13 +86,16 @@ const Account = () => {
   return (
     <div className="container max-w-2xl mx-auto py-8 px-4">
       <h1 className="text-3xl font-bold mb-8">My Account</h1>
-      <AccountForm
-        profile={profile}
-        loading={loading}
-        onProfileChange={setProfile}
-        onSubmit={handleSubmit}
-        onSignOut={handleSignOut}
-      />
+      <div className="space-y-8">
+        <AccountForm
+          profile={profile}
+          loading={loading}
+          onProfileChange={setProfile}
+          onSubmit={handleSubmit}
+          onSignOut={handleSignOut}
+        />
+        <AlertSettings />
+      </div>
     </div>
   );
 };

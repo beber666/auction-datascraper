@@ -1,15 +1,15 @@
 import * as React from "react";
-import type { SidebarContextType } from "./types";
+import { SidebarContextType } from "./types";
 
-export const SidebarContext = React.createContext<SidebarContextType | null>(null);
-
-export function useSidebar() {
-  const context = React.useContext(SidebarContext);
-  if (!context) {
-    throw new Error("useSidebar must be used within a SidebarProvider");
-  }
-  return context;
-}
+export const SidebarContext = React.createContext<SidebarContextType>({
+  state: "expanded",
+  open: true,
+  setOpen: () => {},
+  openMobile: false,
+  setOpenMobile: () => {},
+  isMobile: false,
+  toggleSidebar: () => {},
+});
 
 export const SidebarProvider: React.FC<{
   children: React.ReactNode;
@@ -25,6 +25,16 @@ export const SidebarProvider: React.FC<{
       setOpen(prev => !prev);
     }
   }, [isMobile]);
+
+  React.useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
   const state = open ? "expanded" : "collapsed";
 
