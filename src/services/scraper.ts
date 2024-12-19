@@ -36,49 +36,25 @@ export class ScraperService {
     return this.exchangeRates;
   }
 
-  private static getProxiedImageUrl(originalUrl: string): string {
-    if (!originalUrl) return '';
-    
-    // Clean and normalize the URL
-    let cleanUrl = originalUrl;
-    if (!cleanUrl.startsWith('http')) {
-      cleanUrl = `https:${cleanUrl}`;
-    }
-    
-    // Remove any query parameters that might cause issues
-    cleanUrl = cleanUrl.split('?')[0];
-    
-    const proxyUrl = 'https://yssapojsghmotbifhybq.supabase.co/functions/v1/proxy-image';
-    console.log('Original image URL:', cleanUrl);
-    const proxiedUrl = `${proxyUrl}?url=${encodeURIComponent(cleanUrl)}`;
-    console.log('Proxied image URL:', proxiedUrl);
-    return proxiedUrl;
-  }
-
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
     try {
       console.log('Fetching URL:', url);
       
-      const response = await fetch('https://yssapojsghmotbifhybq.supabase.co/functions/v1/scrape-auction', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url }),
+      const { data, error } = await supabase.functions.invoke('scrape-auction', {
+        body: { url },
       });
 
-      if (!response.ok) {
+      if (error) {
+        console.error('Error scraping Zenmarket:', error);
         throw new Error('Failed to fetch auction data');
       }
 
-      const { contents } = await response.json();
-      
-      if (!contents) {
+      if (!data || !data.contents) {
         throw new Error("Failed to fetch page contents");
       }
 
       const parser = new DOMParser();
-      const doc = parser.parseFromString(contents, 'text/html');
+      const doc = parser.parseFromString(data.contents, 'text/html');
       
       const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
       const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
@@ -86,10 +62,7 @@ export class ScraperService {
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
       const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
       
-      // Enhanced image extraction with multiple fallbacks
       let imageUrl = '';
-      
-      // Try multiple selectors to find the image
       const imageSelectors = [
         '#imgPreview',
         '.item-image img',
@@ -102,7 +75,6 @@ export class ScraperService {
       for (const selector of imageSelectors) {
         const imgElement = doc.querySelector(selector);
         if (imgElement) {
-          // Try both src and data-src attributes
           imageUrl = imgElement.getAttribute('src') || 
                     imgElement.getAttribute('data-src') || 
                     imgElement.getAttribute('data-original') || '';
@@ -110,7 +82,6 @@ export class ScraperService {
         }
       }
 
-      // If still no image found, try looking for any img tag with specific keywords in src
       if (!imageUrl) {
         const allImages = doc.getElementsByTagName('img');
         for (const img of allImages) {
@@ -124,8 +95,9 @@ export class ScraperService {
 
       console.log('Found image URL:', imageUrl);
 
-      // Always proxy the image URL through our Edge Function
-      const proxiedImageUrl = imageUrl ? this.getProxiedImageUrl(imageUrl) : '';
+      const proxiedImageUrl = imageUrl ? 
+        `https://yssapojsghmotbifhybq.supabase.co/functions/v1/proxy-image?url=${encodeURIComponent(imageUrl)}` : 
+        '';
 
       const item: AuctionItem = {
         id: Math.random().toString(36).substr(2, 9),
@@ -143,7 +115,7 @@ export class ScraperService {
       return item;
     } catch (error) {
       console.error('Error scraping Zenmarket:', error);
-      throw new Error('Failed to scrape auction data');
+      throw new Error('Failed to fetch auction data');
     }
   }
 

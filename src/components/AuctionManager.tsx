@@ -39,7 +39,13 @@ export const AuctionManager = ({ items, setItems, autoRefresh, refreshInterval }
               profile?.preferred_language || "en"
             );
           }
-          return newItem;
+          return {
+            ...item,
+            ...newItem,
+            id: item.id,
+            user_id: item.user_id,
+            created_at: item.created_at
+          };
         } catch (error) {
           console.error(`Failed to refresh auction ${item.url}:`, error);
           return item;
@@ -88,7 +94,7 @@ export const AuctionManager = ({ items, setItems, autoRefresh, refreshInterval }
       user_id: session.user.id
     };
 
-    setItems(prev => [...prev, tempItem]);
+    setItems([...items, tempItem]);
     setIsLoading(false);
 
     try {
@@ -143,7 +149,7 @@ export const AuctionManager = ({ items, setItems, autoRefresh, refreshInterval }
           created_at: savedItem.created_at
         };
 
-        setItems(prev => prev.map(i => 
+        setItems(items.map(i => 
           i.id === tempItem.id ? mappedItem : i
         ));
 
@@ -158,7 +164,7 @@ export const AuctionManager = ({ items, setItems, autoRefresh, refreshInterval }
         description: "Failed to fetch auction data",
         variant: "destructive",
       });
-      setItems(prev => prev.filter(i => i.id !== tempItem.id));
+      setItems(items.filter(i => i.id !== tempItem.id));
     }
   };
 
