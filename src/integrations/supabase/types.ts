@@ -9,7 +9,77 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      auctions: {
+        Row: {
+          created_at: string
+          current_price: string | null
+          id: string
+          last_updated: string | null
+          number_of_bids: string | null
+          price_in_jpy: number | null
+          product_name: string | null
+          time_remaining: string | null
+          url: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          current_price?: string | null
+          id?: string
+          last_updated?: string | null
+          number_of_bids?: string | null
+          price_in_jpy?: number | null
+          product_name?: string | null
+          time_remaining?: string | null
+          url: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          current_price?: string | null
+          id?: string
+          last_updated?: string | null
+          number_of_bids?: string | null
+          price_in_jpy?: number | null
+          product_name?: string | null
+          time_remaining?: string | null
+          url?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auctions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          country: string | null
+          created_at: string
+          first_name: string | null
+          id: string
+          last_name: string | null
+        }
+        Insert: {
+          country?: string | null
+          created_at?: string
+          first_name?: string | null
+          id: string
+          last_name?: string | null
+        }
+        Update: {
+          country?: string | null
+          created_at?: string
+          first_name?: string | null
+          id?: string
+          last_name?: string | null
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

@@ -4,6 +4,8 @@ import { UrlForm } from "@/components/UrlForm";
 import { AuctionTable } from "@/components/AuctionTable";
 import { useToast } from "@/components/ui/use-toast";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 
 const Index = () => {
   const [items, setItems] = useState<AuctionItem[]>([]);
@@ -12,6 +14,17 @@ const Index = () => {
   const [refreshInterval, setRefreshInterval] = useState(1);
   const [currency, setCurrency] = useState("JPY");
   const { toast } = useToast();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const checkUser = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        navigate("/login");
+      }
+    };
+    checkUser();
+  }, [navigate]);
 
   const refreshAuctions = async () => {
     const updatedItems = await Promise.all(
