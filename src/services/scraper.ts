@@ -38,7 +38,8 @@ export class ScraperService {
 
   private static getProxiedImageUrl(originalUrl: string): string {
     if (!originalUrl) return '';
-    const proxyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image`;
+    // Using the hardcoded Supabase project URL since it's public anyway
+    const proxyUrl = `https://yssapojsghmotbifhybq.supabase.co/functions/v1/proxy-image`;
     return `${proxyUrl}?url=${encodeURIComponent(originalUrl)}`;
   }
 
