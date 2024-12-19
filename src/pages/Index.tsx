@@ -4,6 +4,7 @@ import { UrlForm } from "@/components/UrlForm";
 import { AuctionTable } from "@/components/AuctionTable";
 import { useToast } from "@/hooks/use-toast";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { AlertSettings } from "@/components/AlertSettings";
 import { FeedbackBox } from "@/components/FeedbackBox";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -163,6 +164,7 @@ const Index = () => {
           onCurrencyChange={handleCurrencyChange}
           onLanguageChange={handleLanguageChange}
         />
+        <AlertSettings />
         <UrlForm onSubmit={handleSubmit} isLoading={isLoading} />
         {items.length > 0 ? (
           <AuctionTable items={items} onDelete={handleDelete} />

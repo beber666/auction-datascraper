@@ -9,6 +9,65 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      alert_preferences: {
+        Row: {
+          alert_minutes: number
+          enable_browser: boolean
+          enable_email: boolean
+          enable_telegram: boolean
+          telegram_chat_id: string | null
+          telegram_token: string | null
+          user_id: string
+        }
+        Insert: {
+          alert_minutes?: number
+          enable_browser?: boolean
+          enable_email?: boolean
+          enable_telegram?: boolean
+          telegram_chat_id?: string | null
+          telegram_token?: string | null
+          user_id: string
+        }
+        Update: {
+          alert_minutes?: number
+          enable_browser?: boolean
+          enable_email?: boolean
+          enable_telegram?: boolean
+          telegram_chat_id?: string | null
+          telegram_token?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      auction_alerts: {
+        Row: {
+          auction_id: string
+          created_at: string
+          id: string
+          user_id: string
+        }
+        Insert: {
+          auction_id: string
+          created_at?: string
+          id?: string
+          user_id: string
+        }
+        Update: {
+          auction_id?: string
+          created_at?: string
+          id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "auction_alerts_auction_id_fkey"
+            columns: ["auction_id"]
+            isOneToOne: false
+            referencedRelation: "auctions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       auctions: {
         Row: {
           created_at: string
