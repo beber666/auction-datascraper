@@ -12,6 +12,7 @@ import {
 import { sidebarMenuButtonVariants } from "./variants";
 import type { SidebarMenuButtonProps } from "./types";
 import { useSidebar } from "./context";
+import type { VariantProps } from "class-variance-authority";
 
 export const SidebarContent = React.forwardRef<
   HTMLDivElement,
@@ -55,38 +56,44 @@ export const SidebarGroup = React.forwardRef<
 ));
 SidebarGroup.displayName = "SidebarGroup";
 
-export const SidebarInput = React.forwardRef<
-  React.ElementRef<typeof Input>,
-  React.ComponentProps<typeof Input>
->(({ className, ...props }, ref) => {
-  return (
-    <Input
-      ref={ref}
-      data-sidebar="input"
-      className={cn(
-        "h-8 w-full bg-background shadow-none focus-visible:ring-2 focus-visible:ring-sidebar-ring",
-        className
-      )}
-      {...props}
-    />
-  );
-});
-SidebarInput.displayName = "SidebarInput";
+export const SidebarHeader = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="header"
+    className={cn("flex items-center p-2", className)}
+    {...props}
+  />
+));
+SidebarHeader.displayName = "SidebarHeader";
 
-export const SidebarSeparator = React.forwardRef<
-  React.ElementRef<typeof Separator>,
-  React.ComponentProps<typeof Separator>
->(({ className, ...props }, ref) => {
-  return (
-    <Separator
-      ref={ref}
-      data-sidebar="separator"
-      className={cn("mx-2 w-auto bg-sidebar-border", className)}
-      {...props}
-    />
-  );
-});
-SidebarSeparator.displayName = "SidebarSeparator";
+export const SidebarMenu = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="menu"
+    className={cn("flex flex-col gap-1", className)}
+    {...props}
+  />
+));
+SidebarMenu.displayName = "SidebarMenu";
+
+export const SidebarMenuItem = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="menu-item"
+    className={cn("flex items-center", className)}
+    {...props}
+  />
+));
+SidebarMenuItem.displayName = "SidebarMenuItem";
 
 export const SidebarMenuButton = React.forwardRef<
   HTMLButtonElement,
@@ -124,12 +131,6 @@ export const SidebarMenuButton = React.forwardRef<
       return button;
     }
 
-    if (typeof tooltip === "string") {
-      tooltip = {
-        children: tooltip,
-      };
-    }
-
     return (
       <Tooltip>
         <TooltipTrigger asChild>{button}</TooltipTrigger>
@@ -137,7 +138,7 @@ export const SidebarMenuButton = React.forwardRef<
           side="right"
           align="center"
           hidden={state !== "collapsed" || isMobile}
-          {...tooltip}
+          {...(typeof tooltip === "string" ? { children: tooltip } : tooltip)}
         />
       </Tooltip>
     );
@@ -145,39 +146,41 @@ export const SidebarMenuButton = React.forwardRef<
 );
 SidebarMenuButton.displayName = "SidebarMenuButton";
 
-export const SidebarMenuSkeleton = React.forwardRef<
+export const SidebarMenuBadge = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<"div"> & {
-    showIcon?: boolean;
-  }
->(({ className, showIcon = false, ...props }, ref) => {
-  const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
-  }, []);
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="menu-badge"
+    className={cn("ml-auto", className)}
+    {...props}
+  />
+));
+SidebarMenuBadge.displayName = "SidebarMenuBadge";
 
-  return (
-    <div
-      ref={ref}
-      data-sidebar="menu-skeleton"
-      className={cn("rounded-md h-8 flex gap-2 px-2 items-center", className)}
-      {...props}
-    >
-      {showIcon && (
-        <Skeleton
-          className="size-4 rounded-md"
-          data-sidebar="menu-skeleton-icon"
-        />
-      )}
-      <Skeleton
-        className="h-4 flex-1 max-w-[--skeleton-width]"
-        data-sidebar="menu-skeleton-text"
-        style={
-          {
-            "--skeleton-width": width,
-          } as React.CSSProperties
-        }
-      />
-    </div>
-  );
-});
-SidebarMenuSkeleton.displayName = "SidebarMenuSkeleton";
+export const SidebarMenuSub = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="menu-sub"
+    className={cn("flex flex-col gap-1", className)}
+    {...props}
+  />
+));
+SidebarMenuSub.displayName = "SidebarMenuSub";
+
+export const SidebarMenuSubItem = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="menu-sub-item"
+    className={cn("flex items-center", className)}
+    {...props}
+  />
+));
+SidebarMenuSubItem.displayName = "SidebarMenuSubItem";
