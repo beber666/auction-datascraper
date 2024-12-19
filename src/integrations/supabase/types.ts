@@ -63,6 +63,8 @@ export type Database = {
           first_name: string | null
           id: string
           last_name: string | null
+          preferred_currency: string | null
+          preferred_language: string | null
         }
         Insert: {
           country?: string | null
@@ -70,6 +72,8 @@ export type Database = {
           first_name?: string | null
           id: string
           last_name?: string | null
+          preferred_currency?: string | null
+          preferred_language?: string | null
         }
         Update: {
           country?: string | null
@@ -77,6 +81,8 @@ export type Database = {
           first_name?: string | null
           id?: string
           last_name?: string | null
+          preferred_currency?: string | null
+          preferred_language?: string | null
         }
         Relationships: []
       }

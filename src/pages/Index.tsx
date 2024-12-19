@@ -2,8 +2,9 @@ import { useState, useEffect } from "react";
 import { AuctionItem, ScraperService } from "@/services/scraper";
 import { UrlForm } from "@/components/UrlForm";
 import { AuctionTable } from "@/components/AuctionTable";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { FeedbackBox } from "@/components/FeedbackBox";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -12,7 +13,8 @@ const Index = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(true);
   const [refreshInterval, setRefreshInterval] = useState(1);
-  const [currency, setCurrency] = useState("JPY");
+  const [currency, setCurrency] = useState("EUR");
+  const [language, setLanguage] = useState("en");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -21,6 +23,19 @@ const Index = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         navigate("/login");
+        return;
+      }
+
+      // Load user preferences
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("preferred_currency, preferred_language")
+        .eq("id", session.user.id)
+        .single();
+
+      if (profile) {
+        setCurrency(profile.preferred_currency || "EUR");
+        setLanguage(profile.preferred_language || "en");
       }
     };
     checkUser();
@@ -33,6 +48,9 @@ const Index = () => {
         try {
           const newItem = await ScraperService.scrapeZenmarket(item.url);
           newItem.currentPrice = await ScraperService.convertPrice(newItem.priceInJPY, currency);
+          if (language !== "en") {
+            newItem.productName = await ScraperService.translateText(newItem.productName, language);
+          }
           return newItem;
         } catch (error) {
           console.error(`Failed to refresh auction ${item.url}:`, error);
@@ -55,23 +73,30 @@ const Index = () => {
     }, refreshInterval * 60000);
 
     return () => clearInterval(interval);
-  }, [items, autoRefresh, refreshInterval, currency]);
+  }, [items, autoRefresh, refreshInterval, currency, language]);
 
-  useEffect(() => {
-    const updatePrices = async () => {
-      const updatedItems = await Promise.all(
-        items.map(async (item) => ({
-          ...item,
-          currentPrice: await ScraperService.convertPrice(item.priceInJPY, currency),
-        }))
-      );
-      setItems(updatedItems);
-    };
-
-    if (items.length > 0) {
-      updatePrices();
+  const handleCurrencyChange = async (newCurrency: string) => {
+    setCurrency(newCurrency);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from("profiles")
+        .update({ preferred_currency: newCurrency })
+        .eq("id", session.user.id);
     }
-  }, [currency]);
+  };
+
+  const handleLanguageChange = async (newLanguage: string) => {
+    setLanguage(newLanguage);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from("profiles")
+        .update({ preferred_language: newLanguage })
+        .eq("id", session.user.id);
+    }
+    refreshAuctions(); // Refresh to translate items
+  };
 
   const handleSubmit = async (url: string) => {
     setIsLoading(true);
@@ -132,9 +157,11 @@ const Index = () => {
           autoRefresh={autoRefresh}
           refreshInterval={refreshInterval}
           currency={currency}
+          language={language}
           onAutoRefreshChange={setAutoRefresh}
           onRefreshIntervalChange={setRefreshInterval}
-          onCurrencyChange={setCurrency}
+          onCurrencyChange={handleCurrencyChange}
+          onLanguageChange={handleLanguageChange}
         />
         <UrlForm onSubmit={handleSubmit} isLoading={isLoading} />
         {items.length > 0 ? (
@@ -145,6 +172,7 @@ const Index = () => {
           </div>
         )}
       </div>
+      <FeedbackBox />
     </div>
   );
 };
