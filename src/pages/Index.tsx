@@ -16,6 +16,7 @@ const Index = () => {
   const refreshAuctions = async () => {
     const updatedItems = await Promise.all(
       items.map(async (item) => {
+        if (item.isLoading) return item;
         try {
           const newItem = await ScraperService.scrapeZenmarket(item.url);
           newItem.currentPrice = await ScraperService.convertPrice(newItem.priceInJPY, currency);
@@ -43,7 +44,6 @@ const Index = () => {
     return () => clearInterval(interval);
   }, [items, autoRefresh, refreshInterval, currency]);
 
-  // Update prices when currency changes
   useEffect(() => {
     const updatePrices = async () => {
       const updatedItems = await Promise.all(
@@ -62,10 +62,30 @@ const Index = () => {
 
   const handleSubmit = async (url: string) => {
     setIsLoading(true);
+    // Create a temporary item with loading state
+    const tempItem: AuctionItem = {
+      id: Math.random().toString(36).substr(2, 9),
+      url,
+      productName: "Loading...",
+      currentPrice: "...",
+      priceInJPY: 0,
+      numberOfBids: "...",
+      timeRemaining: "...",
+      lastUpdated: new Date(),
+      isLoading: true
+    };
+
+    setItems(prev => [...prev, tempItem]);
+    setIsLoading(false);
+
     try {
       const item = await ScraperService.scrapeZenmarket(url);
       item.currentPrice = await ScraperService.convertPrice(item.priceInJPY, currency);
-      setItems((prev) => [...prev, item]);
+      
+      setItems(prev => prev.map(i => 
+        i.id === tempItem.id ? { ...item, id: tempItem.id } : i
+      ));
+
       toast({
         title: "Success",
         description: "Auction added successfully",
@@ -76,8 +96,8 @@ const Index = () => {
         description: "Failed to fetch auction data",
         variant: "destructive",
       });
-    } finally {
-      setIsLoading(false);
+      // Remove the temporary item if scraping failed
+      setItems(prev => prev.filter(i => i.id !== tempItem.id));
     }
   };
 

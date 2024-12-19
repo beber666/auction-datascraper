@@ -7,6 +7,7 @@ export interface AuctionItem {
   numberOfBids: string;
   timeRemaining: string;
   lastUpdated: Date;
+  isLoading?: boolean;
 }
 
 interface ExchangeRates {

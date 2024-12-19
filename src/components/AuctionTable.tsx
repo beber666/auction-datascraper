@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AuctionItem } from "@/services/scraper";
-import { ExternalLink, Trash2 } from "lucide-react";
+import { ExternalLink, Trash2, Loader2 } from "lucide-react";
 import { Button } from "./ui/button";
 
 interface AuctionTableProps {
@@ -30,8 +30,17 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
         </TableHeader>
         <TableBody>
           {items.map((item) => (
-            <TableRow key={item.id}>
-              <TableCell className="font-medium">{item.productName}</TableCell>
+            <TableRow key={item.id} className={item.isLoading ? "opacity-60" : ""}>
+              <TableCell className="font-medium">
+                {item.isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Loading...
+                  </div>
+                ) : (
+                  item.productName
+                )}
+              </TableCell>
               <TableCell className="text-green-600 font-semibold">
                 {item.currentPrice}
               </TableCell>
