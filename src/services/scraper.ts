@@ -1,3 +1,5 @@
+import { supabase } from "@/integrations/supabase/client";
+
 export interface AuctionItem {
   id: string;
   url: string;
