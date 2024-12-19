@@ -38,8 +38,7 @@ export class ScraperService {
 
   private static getProxiedImageUrl(originalUrl: string): string {
     if (!originalUrl) return '';
-    // Using the hardcoded Supabase project URL since it's public anyway
-    const proxyUrl = `https://yssapojsghmotbifhybq.supabase.co/functions/v1/proxy-image`;
+    const proxyUrl = 'https://yssapojsghmotbifhybq.supabase.co/functions/v1/proxy-image';
     return `${proxyUrl}?url=${encodeURIComponent(originalUrl)}`;
   }
 
@@ -81,8 +80,10 @@ export class ScraperService {
         }
       }
 
-      // Proxy the image URL through our Edge Function
-      const proxiedImageUrl = this.getProxiedImageUrl(imageUrl);
+      // Always proxy the image URL through our Edge Function
+      const proxiedImageUrl = imageUrl ? this.getProxiedImageUrl(imageUrl) : '';
+      console.log('Original image URL:', imageUrl);
+      console.log('Proxied image URL:', proxiedImageUrl);
 
       const item: AuctionItem = {
         id: Math.random().toString(36).substr(2, 9),
