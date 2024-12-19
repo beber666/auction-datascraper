@@ -5,6 +5,14 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { countries } from "@/lib/countries";
 
 const Account = () => {
   const navigate = useNavigate();
@@ -102,11 +110,21 @@ const Account = () => {
           </div>
           <div>
             <Label htmlFor="country">Country</Label>
-            <Input
-              id="country"
+            <Select
               value={profile.country}
-              onChange={(e) => setProfile({ ...profile, country: e.target.value })}
-            />
+              onValueChange={(value) => setProfile({ ...profile, country: value })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="Select a country" />
+              </SelectTrigger>
+              <SelectContent>
+                {countries.map((country) => (
+                  <SelectItem key={country.code} value={country.code}>
+                    {country.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
         </div>
         <div className="flex justify-between">
