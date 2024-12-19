@@ -45,6 +45,9 @@ export class ScraperService {
       cleanUrl = `https:${cleanUrl}`;
     }
     
+    // Remove any query parameters that might cause issues
+    cleanUrl = cleanUrl.split('?')[0];
+    
     const proxyUrl = 'https://yssapojsghmotbifhybq.supabase.co/functions/v1/proxy-image';
     console.log('Original image URL:', cleanUrl);
     const proxiedUrl = `${proxyUrl}?url=${encodeURIComponent(cleanUrl)}`;
@@ -71,20 +74,43 @@ export class ScraperService {
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
       const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
       
-      // Enhanced image extraction
+      // Enhanced image extraction with multiple fallbacks
       let imageUrl = '';
-      const imgElement = doc.querySelector('#imgPreview');
       
-      if (imgElement) {
-        imageUrl = imgElement.getAttribute('src') || '';
-      } else {
-        const alternativeImg = doc.querySelector('.item-image img') || 
-                             doc.querySelector('.main-image img') ||
-                             doc.querySelector('[data-testid="product-image"]');
-        if (alternativeImg) {
-          imageUrl = alternativeImg.getAttribute('src') || '';
+      // Try multiple selectors to find the image
+      const imageSelectors = [
+        '#imgPreview',
+        '.item-image img',
+        '.main-image img',
+        '[data-testid="product-image"]',
+        '.ProductImage__image img',
+        '.auction-item-image img'
+      ];
+
+      for (const selector of imageSelectors) {
+        const imgElement = doc.querySelector(selector);
+        if (imgElement) {
+          // Try both src and data-src attributes
+          imageUrl = imgElement.getAttribute('src') || 
+                    imgElement.getAttribute('data-src') || 
+                    imgElement.getAttribute('data-original') || '';
+          if (imageUrl) break;
         }
       }
+
+      // If still no image found, try looking for any img tag with specific keywords in src
+      if (!imageUrl) {
+        const allImages = doc.getElementsByTagName('img');
+        for (const img of allImages) {
+          const src = img.getAttribute('src') || '';
+          if (src.includes('auction') || src.includes('item') || src.includes('product')) {
+            imageUrl = src;
+            break;
+          }
+        }
+      }
+
+      console.log('Found image URL:', imageUrl);
 
       // Always proxy the image URL through our Edge Function
       const proxiedImageUrl = imageUrl ? this.getProxiedImageUrl(imageUrl) : '';
