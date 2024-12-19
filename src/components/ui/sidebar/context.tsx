@@ -14,16 +14,30 @@ export function useSidebar() {
 export const SidebarProvider: React.FC<{
   children: React.ReactNode;
 }> = ({ children }) => {
-  const [state, setState] = React.useState<"expanded" | "collapsed">("expanded");
+  const [open, setOpen] = React.useState(true);
+  const [openMobile, setOpenMobile] = React.useState(false);
   const [isMobile, setIsMobile] = React.useState(false);
+
+  const toggleSidebar = React.useCallback(() => {
+    if (isMobile) {
+      setOpenMobile(prev => !prev);
+    } else {
+      setOpen(prev => !prev);
+    }
+  }, [isMobile]);
+
+  const state = open ? "expanded" : "collapsed";
 
   return (
     <SidebarContext.Provider
       value={{
         state,
-        setState,
+        open,
+        setOpen,
+        openMobile,
+        setOpenMobile,
         isMobile,
-        setIsMobile,
+        toggleSidebar,
       }}
     >
       {children}
