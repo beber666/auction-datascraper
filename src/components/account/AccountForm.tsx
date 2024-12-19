@@ -14,6 +14,8 @@ interface ProfileData {
   first_name: string;
   last_name: string;
   country: string;
+  preferred_language: string;
+  preferred_currency: string;
 }
 
 interface AccountFormProps {
@@ -65,6 +67,41 @@ export const AccountForm = ({
                   {country.name}
                 </SelectItem>
               ))}
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="language">Preferred Language</Label>
+          <Select
+            value={profile.preferred_language}
+            onValueChange={(value) => onProfileChange({ ...profile, preferred_language: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a language" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="en">English</SelectItem>
+              <SelectItem value="fr">French</SelectItem>
+              <SelectItem value="ja">Japanese</SelectItem>
+              <SelectItem value="de">German</SelectItem>
+              <SelectItem value="es">Spanish</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+        <div>
+          <Label htmlFor="currency">Preferred Currency</Label>
+          <Select
+            value={profile.preferred_currency}
+            onValueChange={(value) => onProfileChange({ ...profile, preferred_currency: value })}
+          >
+            <SelectTrigger>
+              <SelectValue placeholder="Select a currency" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="JPY">JPY (¥)</SelectItem>
+              <SelectItem value="EUR">EUR (€)</SelectItem>
+              <SelectItem value="USD">USD ($)</SelectItem>
+              <SelectItem value="GBP">GBP (£)</SelectItem>
             </SelectContent>
           </Select>
         </div>

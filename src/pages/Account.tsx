@@ -14,6 +14,8 @@ const Account = () => {
     first_name: "",
     last_name: "",
     country: "",
+    preferred_language: "en",
+    preferred_currency: "EUR",
   });
 
   useEffect(() => {
@@ -42,6 +44,8 @@ const Account = () => {
           first_name: data.first_name || "",
           last_name: data.last_name || "",
           country: data.country || "",
+          preferred_language: data.preferred_language || "en",
+          preferred_currency: data.preferred_currency || "EUR",
         });
       }
       setLoading(false);
