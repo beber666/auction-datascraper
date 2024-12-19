@@ -38,6 +38,7 @@ export class ScraperService {
 
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
     try {
+      console.log('Fetching URL:', url);
       const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
       const data = await response.json();
       
@@ -48,14 +49,31 @@ export class ScraperService {
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.contents, 'text/html');
 
+      // Debug logging
+      console.log('Parsing document...');
+      
       const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
       const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
       const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''));
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
       const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
-      const imageUrl = doc.querySelector('#imgPreview')?.getAttribute('src') || '';
+      
+      // Updated image selector and logging
+      const imageElement = doc.querySelector('#imgPreview');
+      console.log('Image element found:', imageElement);
+      
+      let imageUrl = '';
+      if (imageElement) {
+        imageUrl = imageElement.getAttribute('src') || '';
+        // If the URL is relative, make it absolute
+        if (imageUrl && !imageUrl.startsWith('http')) {
+          const baseUrl = new URL(url).origin;
+          imageUrl = new URL(imageUrl, baseUrl).toString();
+        }
+        console.log('Image URL extracted:', imageUrl);
+      }
 
-      return {
+      const item: AuctionItem = {
         id: Math.random().toString(36).substr(2, 9),
         url,
         productName,
@@ -66,6 +84,9 @@ export class ScraperService {
         lastUpdated: new Date(),
         imageUrl,
       };
+
+      console.log('Scraped item:', item);
+      return item;
     } catch (error) {
       console.error('Error scraping Zenmarket:', error);
       throw new Error('Failed to scrape auction data');
