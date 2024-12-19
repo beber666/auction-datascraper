@@ -58,15 +58,27 @@ export class ScraperService {
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
     try {
       console.log('Fetching URL:', url);
-      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-      const data = await response.json();
       
-      if (!data.contents) {
+      const response = await fetch('https://yssapojsghmotbifhybq.supabase.co/functions/v1/scrape-auction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch auction data');
+      }
+
+      const { contents } = await response.json();
+      
+      if (!contents) {
         throw new Error("Failed to fetch page contents");
       }
 
       const parser = new DOMParser();
-      const doc = parser.parseFromString(data.contents, 'text/html');
+      const doc = parser.parseFromString(contents, 'text/html');
       
       const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
       const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
