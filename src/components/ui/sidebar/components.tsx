@@ -9,10 +9,51 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { useSidebar } from "./context";
 import { sidebarMenuButtonVariants } from "./variants";
 import type { SidebarMenuButtonProps } from "./types";
-import type { VariantProps } from "class-variance-authority";
+import { useSidebar } from "./context";
+
+export const SidebarContent = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="content"
+    className={cn(
+      "flex min-h-0 flex-1 flex-col gap-2 overflow-auto group-data-[collapsible=icon]:overflow-hidden",
+      className
+    )}
+    {...props}
+  />
+));
+SidebarContent.displayName = "SidebarContent";
+
+export const SidebarFooter = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="footer"
+    className={cn("flex flex-col gap-2 p-2", className)}
+    {...props}
+  />
+));
+SidebarFooter.displayName = "SidebarFooter";
+
+export const SidebarGroup = React.forwardRef<
+  HTMLDivElement,
+  React.ComponentProps<"div">
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    data-sidebar="group"
+    className={cn("relative flex w-full min-w-0 flex-col p-2", className)}
+    {...props}
+  />
+));
+SidebarGroup.displayName = "SidebarGroup";
 
 export const SidebarInput = React.forwardRef<
   React.ElementRef<typeof Input>,

@@ -7,10 +7,22 @@ import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarContext, useSidebar } from "./context";
 import {
-  SidebarInput,
-  SidebarSeparator,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupAction,
+  SidebarGroupContent,
+  SidebarGroupLabel,
+  SidebarHeader,
+  SidebarMenu,
+  SidebarMenuAction,
+  SidebarMenuBadge,
   SidebarMenuButton,
+  SidebarMenuItem,
   SidebarMenuSkeleton,
+  SidebarMenuSub,
+  SidebarMenuSubButton,
+  SidebarMenuSubItem,
 } from "./components";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
@@ -221,8 +233,8 @@ const Sidebar = React.forwardRef<
       </div>
     )
   }
-)
-Sidebar.displayName = "Sidebar"
+);
+Sidebar.displayName = "Sidebar";
 
 const SidebarTrigger = React.forwardRef<
   React.ElementRef<typeof Button>,
@@ -247,8 +259,8 @@ const SidebarTrigger = React.forwardRef<
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )
-})
-SidebarTrigger.displayName = "SidebarTrigger"
+});
+SidebarTrigger.displayName = "SidebarTrigger";
 
 const SidebarRail = React.forwardRef<
   HTMLButtonElement,
@@ -276,8 +288,8 @@ const SidebarRail = React.forwardRef<
       {...props}
     />
   )
-})
-SidebarRail.displayName = "SidebarRail"
+});
+SidebarRail.displayName = "SidebarRail";
 
 const SidebarInset = React.forwardRef<
   HTMLDivElement,
@@ -294,8 +306,8 @@ const SidebarInset = React.forwardRef<
       {...props}
     />
   )
-})
-SidebarInset.displayName = "SidebarInset"
+});
+SidebarInset.displayName = "SidebarInset";
 
 export {
   Sidebar,
@@ -306,8 +318,6 @@ export {
   SidebarGroupContent,
   SidebarGroupLabel,
   SidebarHeader,
-  SidebarInput,
-  SidebarInset,
   SidebarMenu,
   SidebarMenuAction,
   SidebarMenuBadge,
@@ -317,9 +327,5 @@ export {
   SidebarMenuSub,
   SidebarMenuSubButton,
   SidebarMenuSubItem,
-  SidebarProvider,
-  SidebarRail,
-  SidebarSeparator,
-  SidebarTrigger,
   useSidebar,
 };

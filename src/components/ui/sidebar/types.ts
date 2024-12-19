@@ -1,6 +1,6 @@
-import { type TooltipContentProps } from "@radix-ui/react-tooltip";
+import type { TooltipContentProps } from "@radix-ui/react-tooltip";
 
-export type SidebarContext = {
+export type SidebarContextType = {
   state: "expanded" | "collapsed";
   open: boolean;
   setOpen: (open: boolean) => void;
