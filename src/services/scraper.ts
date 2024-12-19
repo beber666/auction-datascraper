@@ -10,6 +10,7 @@ export interface AuctionItem {
   isLoading?: boolean;
   user_id?: string;
   created_at?: string;
+  imageUrl?: string | null; // Added imageUrl property
 }
 
 interface ExchangeRates {
@@ -91,12 +92,16 @@ export class ScraperService {
       const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''));
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
       const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
+      
+      // Extract image URL
+      const imageUrl = doc.querySelector('#imgPreview')?.getAttribute('src') || null;
 
       console.log('Scraped item:', {
         productName,
         priceInJPY,
         numberOfBids,
-        timeRemaining
+        timeRemaining,
+        imageUrl
       });
 
       return {
@@ -108,6 +113,7 @@ export class ScraperService {
         numberOfBids,
         timeRemaining,
         lastUpdated: new Date(),
+        imageUrl // Include imageUrl in the returned object
       };
     } catch (error) {
       console.error('Error scraping Zenmarket:', error);

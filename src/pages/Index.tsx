@@ -26,16 +26,18 @@ const Index = () => {
         return;
       }
 
-      // Load user preferences
+      // Load user preferences including auto refresh settings
       const { data: profile } = await supabase
         .from("profiles")
-        .select("preferred_currency, preferred_language")
+        .select("preferred_currency, preferred_language, auto_refresh, refresh_interval")
         .eq("id", session.user.id)
         .single();
 
       if (profile) {
         setCurrency(profile.preferred_currency);
         setLanguage(profile.preferred_language);
+        setAutoRefresh(profile.auto_refresh || false);
+        setRefreshInterval(profile.refresh_interval || 1);
       }
 
       // Load existing auctions
@@ -220,10 +222,24 @@ const Index = () => {
 
   const handleAutoRefreshChange = async (enabled: boolean) => {
     setAutoRefresh(enabled);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from("profiles")
+        .update({ auto_refresh: enabled })
+        .eq("id", session.user.id);
+    }
   };
 
   const handleRefreshIntervalChange = async (minutes: number) => {
     setRefreshInterval(minutes);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from("profiles")
+        .update({ refresh_interval: minutes })
+        .eq("id", session.user.id);
+    }
   };
 
   const handleCurrencyChange = async (newCurrency: string) => {

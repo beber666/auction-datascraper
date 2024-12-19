@@ -100,7 +100,7 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
   };
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border w-full max-w-[1200px] mx-auto">
       <Table>
         <TableHeader>
           <TableRow>

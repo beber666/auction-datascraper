@@ -120,6 +120,7 @@ export type Database = {
       }
       profiles: {
         Row: {
+          auto_refresh: boolean | null
           country: string | null
           created_at: string
           first_name: string | null
@@ -127,8 +128,10 @@ export type Database = {
           last_name: string | null
           preferred_currency: string | null
           preferred_language: string | null
+          refresh_interval: number | null
         }
         Insert: {
+          auto_refresh?: boolean | null
           country?: string | null
           created_at?: string
           first_name?: string | null
@@ -136,8 +139,10 @@ export type Database = {
           last_name?: string | null
           preferred_currency?: string | null
           preferred_language?: string | null
+          refresh_interval?: number | null
         }
         Update: {
+          auto_refresh?: boolean | null
           country?: string | null
           created_at?: string
           first_name?: string | null
@@ -145,6 +150,7 @@ export type Database = {
           last_name?: string | null
           preferred_currency?: string | null
           preferred_language?: string | null
+          refresh_interval?: number | null
         }
         Relationships: []
       }
