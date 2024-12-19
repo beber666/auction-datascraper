@@ -73,7 +73,6 @@ export type Database = {
           created_at: string
           current_price: string | null
           id: string
-          image_url: string | null
           last_updated: string | null
           number_of_bids: string | null
           price_in_jpy: number | null
@@ -86,7 +85,6 @@ export type Database = {
           created_at?: string
           current_price?: string | null
           id?: string
-          image_url?: string | null
           last_updated?: string | null
           number_of_bids?: string | null
           price_in_jpy?: number | null
@@ -99,7 +97,6 @@ export type Database = {
           created_at?: string
           current_price?: string | null
           id?: string
-          image_url?: string | null
           last_updated?: string | null
           number_of_bids?: string | null
           price_in_jpy?: number | null

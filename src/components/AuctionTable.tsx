@@ -7,7 +7,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AuctionItem } from "@/services/scraper";
-import { ExternalLink, Trash2, Loader2, Bell, BellOff, ImageOff } from "lucide-react";
+import { ExternalLink, Trash2, Loader2, Bell, BellOff } from "lucide-react";
 import { Button } from "./ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
@@ -21,7 +21,6 @@ interface AuctionTableProps {
 export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
   const [alertedAuctions, setAlertedAuctions] = useState<string[]>([]);
   const { toast } = useToast();
-  const [imageErrors, setImageErrors] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const fetchAlertedAuctions = async () => {
@@ -40,11 +39,6 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
 
     fetchAlertedAuctions();
   }, []);
-
-  const handleImageError = (itemId: string, imageUrl: string) => {
-    console.error(`Image failed to load for item ${itemId}. URL:`, imageUrl);
-    setImageErrors(prev => new Set(prev).add(itemId));
-  };
 
   const toggleAlert = async (auctionId: string) => {
     const { data: { session } } = await supabase.auth.getSession();
@@ -110,7 +104,6 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[100px]">Image</TableHead>
             <TableHead>Product Name</TableHead>
             <TableHead>Current Price</TableHead>
             <TableHead className="text-center">Bids</TableHead>
@@ -121,30 +114,6 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
         <TableBody>
           {items.map((item) => (
             <TableRow key={item.id} className={item.isLoading ? "opacity-60" : ""}>
-              <TableCell className="p-2">
-                {item.imageUrl ? (
-                  <div className="relative w-[100px] h-[100px]">
-                    {!imageErrors.has(item.id) ? (
-                      <img 
-                        src={item.imageUrl} 
-                        alt={item.productName}
-                        className="w-full h-full object-cover rounded-md"
-                        onError={() => handleImageError(item.id, item.imageUrl || '')}
-                        loading="lazy"
-                        crossOrigin="anonymous"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-muted flex items-center justify-center rounded-md">
-                        <ImageOff className="h-8 w-8 text-muted-foreground" />
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div className="w-[100px] h-[100px] bg-muted flex items-center justify-center rounded-md">
-                    <ImageOff className="h-8 w-8 text-muted-foreground" />
-                  </div>
-                )}
-              </TableCell>
               <TableCell className="font-medium">
                 {item.isLoading ? (
                   <div className="flex items-center gap-2">
