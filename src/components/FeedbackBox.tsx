@@ -30,7 +30,7 @@ export const FeedbackBox = () => {
 
       const { data: profile } = await supabase
         .from("profiles")
-        .select("first_name, last_name, email")
+        .select("first_name, last_name")
         .eq("id", session.user.id)
         .single();
 
