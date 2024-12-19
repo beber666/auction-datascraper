@@ -41,8 +41,8 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
     fetchAlertedAuctions();
   }, []);
 
-  const handleImageError = (itemId: string) => {
-    console.error(`Image failed to load for item ${itemId}`);
+  const handleImageError = (itemId: string, imageUrl: string) => {
+    console.error(`Image failed to load for item ${itemId}. URL:`, imageUrl);
     setImageErrors(prev => new Set(prev).add(itemId));
   };
 
@@ -129,8 +129,9 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
                         src={item.imageUrl} 
                         alt={item.productName}
                         className="w-full h-full object-cover rounded-md"
-                        onError={() => handleImageError(item.id)}
+                        onError={() => handleImageError(item.id, item.imageUrl || '')}
                         loading="lazy"
+                        crossOrigin="anonymous"
                       />
                     ) : (
                       <div className="w-full h-full bg-muted flex items-center justify-center rounded-md">

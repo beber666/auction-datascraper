@@ -49,8 +49,8 @@ export class ScraperService {
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.contents, 'text/html');
 
-      // Debug logging
-      console.log('Parsing document...');
+      // Debug logging for image extraction
+      console.log('Parsing document for images...');
       
       const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
       const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
@@ -58,19 +58,42 @@ export class ScraperService {
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
       const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
       
-      // Updated image selector and logging
-      const imageElement = doc.querySelector('#imgPreview');
-      console.log('Image element found:', imageElement);
-      
+      // Enhanced image extraction with debugging
       let imageUrl = '';
-      if (imageElement) {
-        imageUrl = imageElement.getAttribute('src') || '';
-        // If the URL is relative, make it absolute
+      const imgElement = doc.querySelector('#imgPreview');
+      console.log('Image element found:', imgElement);
+      
+      if (imgElement) {
+        imageUrl = imgElement.getAttribute('src') || '';
+        // Handle relative URLs
         if (imageUrl && !imageUrl.startsWith('http')) {
           const baseUrl = new URL(url).origin;
           imageUrl = new URL(imageUrl, baseUrl).toString();
         }
-        console.log('Image URL extracted:', imageUrl);
+        console.log('Extracted image URL:', imageUrl);
+      } else {
+        // Try alternative image selectors
+        const alternativeImg = doc.querySelector('.item-image img') || 
+                             doc.querySelector('.main-image img') ||
+                             doc.querySelector('[data-testid="product-image"]');
+        if (alternativeImg) {
+          imageUrl = alternativeImg.getAttribute('src') || '';
+          console.log('Found image using alternative selector:', imageUrl);
+        }
+      }
+
+      // Validate image URL
+      if (imageUrl) {
+        try {
+          const imgResponse = await fetch(imageUrl);
+          if (!imgResponse.ok || !imgResponse.headers.get('content-type')?.startsWith('image/')) {
+            console.error('Invalid image URL or not an image:', imageUrl);
+            imageUrl = '';
+          }
+        } catch (error) {
+          console.error('Error validating image URL:', error);
+          imageUrl = '';
+        }
       }
 
       const item: AuctionItem = {
@@ -94,7 +117,10 @@ export class ScraperService {
   }
 
   static async translateText(text: string, targetLang: string): Promise<string> {
+    if (!text || targetLang === 'en') return text;
+    
     try {
+      console.log(`Translating text to ${targetLang}:`, text);
       const response = await fetch(
         `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`
       );
@@ -105,7 +131,9 @@ export class ScraperService {
       }
 
       const data = await response.json();
-      return data[0][0][0];
+      const translatedText = data[0][0][0];
+      console.log('Translated text:', translatedText);
+      return translatedText;
     } catch (error) {
       console.error('Translation error:', error);
       return text;
@@ -113,19 +141,28 @@ export class ScraperService {
   }
 
   static async convertPrice(priceInJPY: number, targetCurrency: string): Promise<string> {
-    const rates = await this.fetchExchangeRates();
-    if (!rates || !rates.rates[targetCurrency]) {
-      return `${priceInJPY} ¥`;
+    if (!priceInJPY || targetCurrency === 'JPY') {
+      return `¥${priceInJPY.toLocaleString()}`;
     }
 
-    const convertedPrice = priceInJPY * rates.rates[targetCurrency];
-    const currencySymbols: { [key: string]: string } = {
-      JPY: '¥',
-      EUR: '€',
-      USD: '$',
-      GBP: '£'
-    };
+    try {
+      const rates = await this.fetchExchangeRates();
+      if (!rates || !rates.rates[targetCurrency]) {
+        return `¥${priceInJPY.toLocaleString()}`;
+      }
 
-    return `${currencySymbols[targetCurrency]}${convertedPrice.toFixed(2)}`;
+      const convertedPrice = priceInJPY * rates.rates[targetCurrency];
+      const currencySymbols: { [key: string]: string } = {
+        JPY: '¥',
+        EUR: '€',
+        USD: '$',
+        GBP: '£'
+      };
+
+      return `${currencySymbols[targetCurrency]}${convertedPrice.toFixed(2)}`;
+    } catch (error) {
+      console.error('Price conversion error:', error);
+      return `¥${priceInJPY.toLocaleString()}`;
+    }
   }
 }
