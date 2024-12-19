@@ -36,6 +36,12 @@ export class ScraperService {
     return this.exchangeRates;
   }
 
+  private static getProxiedImageUrl(originalUrl: string): string {
+    if (!originalUrl) return '';
+    const proxyUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/proxy-image`;
+    return `${proxyUrl}?url=${encodeURIComponent(originalUrl)}`;
+  }
+
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
     try {
       console.log('Fetching URL:', url);
@@ -48,9 +54,6 @@ export class ScraperService {
 
       const parser = new DOMParser();
       const doc = parser.parseFromString(data.contents, 'text/html');
-
-      // Debug logging for image extraction
-      console.log('Parsing document for images...');
       
       const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
       const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
@@ -58,43 +61,27 @@ export class ScraperService {
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
       const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
       
-      // Enhanced image extraction with debugging
+      // Enhanced image extraction
       let imageUrl = '';
       const imgElement = doc.querySelector('#imgPreview');
-      console.log('Image element found:', imgElement);
       
       if (imgElement) {
         imageUrl = imgElement.getAttribute('src') || '';
-        // Handle relative URLs
         if (imageUrl && !imageUrl.startsWith('http')) {
           const baseUrl = new URL(url).origin;
           imageUrl = new URL(imageUrl, baseUrl).toString();
         }
-        console.log('Extracted image URL:', imageUrl);
       } else {
-        // Try alternative image selectors
         const alternativeImg = doc.querySelector('.item-image img') || 
                              doc.querySelector('.main-image img') ||
                              doc.querySelector('[data-testid="product-image"]');
         if (alternativeImg) {
           imageUrl = alternativeImg.getAttribute('src') || '';
-          console.log('Found image using alternative selector:', imageUrl);
         }
       }
 
-      // Validate image URL
-      if (imageUrl) {
-        try {
-          const imgResponse = await fetch(imageUrl);
-          if (!imgResponse.ok || !imgResponse.headers.get('content-type')?.startsWith('image/')) {
-            console.error('Invalid image URL or not an image:', imageUrl);
-            imageUrl = '';
-          }
-        } catch (error) {
-          console.error('Error validating image URL:', error);
-          imageUrl = '';
-        }
-      }
+      // Proxy the image URL through our Edge Function
+      const proxiedImageUrl = this.getProxiedImageUrl(imageUrl);
 
       const item: AuctionItem = {
         id: Math.random().toString(36).substr(2, 9),
@@ -105,7 +92,7 @@ export class ScraperService {
         numberOfBids,
         timeRemaining,
         lastUpdated: new Date(),
-        imageUrl,
+        imageUrl: proxiedImageUrl,
       };
 
       console.log('Scraped item:', item);
