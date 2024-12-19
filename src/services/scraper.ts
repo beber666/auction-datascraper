@@ -36,9 +36,12 @@ export class ScraperService {
   }
 
   static async translateText(text: string, targetLang: string): Promise<string> {
+    if (targetLang === 'en') return text;
+    
     try {
+      const encodedText = encodeURIComponent(text);
       const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodeURIComponent(text)}`
+        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=auto&tl=${targetLang}&dt=t&q=${encodedText}`
       );
 
       if (!response.ok) {
@@ -88,6 +91,13 @@ export class ScraperService {
       const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''));
       const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
       const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
+
+      console.log('Scraped item:', {
+        productName,
+        priceInJPY,
+        numberOfBids,
+        timeRemaining
+      });
 
       return {
         id: Math.random().toString(36).substr(2, 9),

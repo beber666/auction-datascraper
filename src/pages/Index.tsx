@@ -6,10 +6,15 @@ import { useToast } from "@/hooks/use-toast";
 import { FeedbackBox } from "@/components/FeedbackBox";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
+import { SettingsPanel } from "@/components/SettingsPanel";
 
 const Index = () => {
   const [items, setItems] = useState<AuctionItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [autoRefresh, setAutoRefresh] = useState(false);
+  const [refreshInterval, setRefreshInterval] = useState(1);
+  const [currency, setCurrency] = useState("EUR");
+  const [language, setLanguage] = useState("en");
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -28,6 +33,11 @@ const Index = () => {
         .eq("id", session.user.id)
         .single();
 
+      if (profile) {
+        setCurrency(profile.preferred_currency);
+        setLanguage(profile.preferred_language);
+      }
+
       // Load existing auctions
       const { data: auctions } = await supabase
         .from("auctions")
@@ -35,7 +45,6 @@ const Index = () => {
         .eq("user_id", session.user.id);
 
       if (auctions) {
-        // Map database fields to AuctionItem interface
         const mappedAuctions: AuctionItem[] = auctions.map(auction => ({
           id: auction.id,
           url: auction.url,
@@ -54,62 +63,69 @@ const Index = () => {
     checkUser();
   }, [navigate]);
 
-  const refreshAuctions = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+  useEffect(() => {
+    let intervalId: NodeJS.Timeout;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("preferred_currency, preferred_language")
-      .eq("id", session.user.id)
-      .single();
+    const refreshAuctions = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    const updatedItems = await Promise.all(
-      items.map(async (item) => {
-        if (item.isLoading) return item;
-        try {
-          const newItem = await ScraperService.scrapeZenmarket(item.url);
-          newItem.currentPrice = await ScraperService.convertPrice(
-            newItem.priceInJPY, 
-            profile?.preferred_currency || "EUR"
-          );
-          if (profile?.preferred_language !== "en") {
-            newItem.productName = await ScraperService.translateText(
-              newItem.productName, 
-              profile?.preferred_language || "en"
+      const updatedItems = await Promise.all(
+        items.map(async (item) => {
+          if (item.isLoading) return item;
+          try {
+            const newItem = await ScraperService.scrapeZenmarket(item.url);
+            newItem.currentPrice = await ScraperService.convertPrice(
+              newItem.priceInJPY, 
+              currency
             );
+            if (language !== "en") {
+              newItem.productName = await ScraperService.translateText(
+                newItem.productName, 
+                language
+              );
+            }
+            return { ...newItem, id: item.id, user_id: session.user.id };
+          } catch (error) {
+            console.error(`Failed to refresh auction ${item.url}:`, error);
+            return item;
           }
-          return newItem;
-        } catch (error) {
-          console.error(`Failed to refresh auction ${item.url}:`, error);
-          return item;
-        }
-      })
-    );
-    setItems(updatedItems);
-
-    // Update items in database
-    for (const item of updatedItems) {
-      await supabase
-        .from("auctions")
-        .update({
-          product_name: item.productName,
-          current_price: item.currentPrice,
-          price_in_jpy: item.priceInJPY,
-          number_of_bids: item.numberOfBids,
-          time_remaining: item.timeRemaining,
-          last_updated: item.lastUpdated.toISOString(),
         })
-        .eq("id", item.id);
+      );
+      setItems(updatedItems);
+
+      // Update items in database
+      for (const item of updatedItems) {
+        await supabase
+          .from("auctions")
+          .update({
+            product_name: item.productName,
+            current_price: item.currentPrice,
+            price_in_jpy: item.priceInJPY,
+            number_of_bids: item.numberOfBids,
+            time_remaining: item.timeRemaining,
+            last_updated: new Date().toISOString(),
+          })
+          .eq("id", item.id);
+      }
+    };
+
+    if (autoRefresh && refreshInterval > 0) {
+      intervalId = setInterval(refreshAuctions, refreshInterval * 60 * 1000);
     }
-  };
+
+    return () => {
+      if (intervalId) {
+        clearInterval(intervalId);
+      }
+    };
+  }, [autoRefresh, refreshInterval, items, currency, language]);
 
   const handleSubmit = async (url: string) => {
     setIsLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Create a temporary item with loading state
     const tempItem: AuctionItem = {
       id: Math.random().toString(36).substr(2, 9),
       url,
@@ -129,26 +145,18 @@ const Index = () => {
     try {
       const item = await ScraperService.scrapeZenmarket(url);
       
-      // Get user preferences
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("preferred_currency, preferred_language")
-        .eq("id", session.user.id)
-        .single();
-
       item.currentPrice = await ScraperService.convertPrice(
         item.priceInJPY, 
-        profile?.preferred_currency || "EUR"
+        currency
       );
 
-      if (profile?.preferred_language !== "en") {
+      if (language !== "en") {
         item.productName = await ScraperService.translateText(
           item.productName, 
-          profile?.preferred_language || "en"
+          language
         );
       }
 
-      // Save to database with correct field mapping
       const { data: savedItem } = await supabase
         .from("auctions")
         .insert([{
@@ -165,7 +173,6 @@ const Index = () => {
         .single();
 
       if (savedItem) {
-        // Map saved item back to AuctionItem interface
         const mappedItem: AuctionItem = {
           id: savedItem.id,
           url: savedItem.url,
@@ -194,13 +201,11 @@ const Index = () => {
         description: "Failed to fetch auction data",
         variant: "destructive",
       });
-      // Remove the temporary item if scraping failed
       setItems(prev => prev.filter(i => i.id !== tempItem.id));
     }
   };
 
   const handleDelete = async (id: string) => {
-    // Delete from database
     await supabase
       .from("auctions")
       .delete()
@@ -213,12 +218,52 @@ const Index = () => {
     });
   };
 
+  const handleAutoRefreshChange = async (enabled: boolean) => {
+    setAutoRefresh(enabled);
+  };
+
+  const handleRefreshIntervalChange = async (minutes: number) => {
+    setRefreshInterval(minutes);
+  };
+
+  const handleCurrencyChange = async (newCurrency: string) => {
+    setCurrency(newCurrency);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from("profiles")
+        .update({ preferred_currency: newCurrency })
+        .eq("id", session.user.id);
+    }
+  };
+
+  const handleLanguageChange = async (newLanguage: string) => {
+    setLanguage(newLanguage);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (session) {
+      await supabase
+        .from("profiles")
+        .update({ preferred_language: newLanguage })
+        .eq("id", session.user.id);
+    }
+  };
+
   return (
     <div className="container mx-auto py-8 px-4">
       <h1 className="text-4xl font-bold mb-8 text-center">
         Zenmarket Auction Tracker
       </h1>
       <div className="max-w-3xl mx-auto space-y-8">
+        <SettingsPanel
+          autoRefresh={autoRefresh}
+          refreshInterval={refreshInterval}
+          currency={currency}
+          language={language}
+          onAutoRefreshChange={handleAutoRefreshChange}
+          onRefreshIntervalChange={handleRefreshIntervalChange}
+          onCurrencyChange={handleCurrencyChange}
+          onLanguageChange={handleLanguageChange}
+        />
         <UrlForm onSubmit={handleSubmit} isLoading={isLoading} />
         {items.length > 0 ? (
           <AuctionTable items={items} onDelete={handleDelete} />
