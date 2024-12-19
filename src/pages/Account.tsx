@@ -18,6 +18,7 @@ const Account = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
   const [profile, setProfile] = useState({
     first_name: "",
     last_name: "",
@@ -32,9 +33,12 @@ const Account = () => {
         return;
       }
       
+      setUserId(session.user.id);
+      
       const { data, error } = await supabase
         .from("profiles")
         .select("*")
+        .eq('id', session.user.id)
         .single();
 
       if (error) {
@@ -61,7 +65,8 @@ const Account = () => {
 
     const { error } = await supabase
       .from("profiles")
-      .update(profile);
+      .update(profile)
+      .eq('id', userId);
 
     if (error) {
       toast({
