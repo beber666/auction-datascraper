@@ -7,6 +7,30 @@ const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
 const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
+function parseTimeRemaining(timeStr: string): number {
+  // Convert to lowercase for easier matching
+  const str = timeStr.toLowerCase();
+  
+  // Initialize variables for days and hours
+  let days = 0;
+  let hours = 0;
+
+  // Match patterns for days in different languages
+  const dayMatches = str.match(/(\d+)\s*(day|jour|día|tag)/);
+  if (dayMatches) {
+    days = parseInt(dayMatches[1]);
+  }
+
+  // Match patterns for hours in different languages
+  const hourMatches = str.match(/(\d+)\s*(hour|heure|hora|stunde)/);
+  if (hourMatches) {
+    hours = parseInt(hourMatches[1]);
+  }
+
+  // Convert everything to minutes
+  return (days * 24 * 60) + (hours * 60);
+}
+
 async function sendTelegramMessage(botToken: string, chatId: string, message: string) {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   await fetch(url, {
@@ -40,7 +64,7 @@ async function sendEmail(to: string, subject: string, html: string) {
 
 const handler = async (req: Request): Promise<Response> => {
   try {
-    // Get auctions that are about to end
+    // Get auctions that are being tracked
     const { data: auctions, error: auctionsError } = await supabase
       .from("auctions")
       .select(`
@@ -52,13 +76,14 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (auctionsError) throw auctionsError;
 
-    for (const auction of auctions) {
-      // Parse time remaining and check if it's within alert threshold
-      const timeStr = auction.time_remaining;
-      if (!timeStr) continue;
+    console.log("Processing auctions:", auctions);
 
-      const minutes = parseInt(timeStr);
-      if (isNaN(minutes)) continue;
+    for (const auction of auctions) {
+      if (!auction.time_remaining) continue;
+
+      // Parse the time remaining into minutes
+      const minutesRemaining = parseTimeRemaining(auction.time_remaining);
+      console.log(`Auction ${auction.id} has ${minutesRemaining} minutes remaining`);
 
       // Get alert preferences for users who have alerts for this auction
       const { data: preferences, error: preferencesError } = await supabase
@@ -72,8 +97,10 @@ const handler = async (req: Request): Promise<Response> => {
       if (preferencesError) throw preferencesError;
 
       for (const pref of preferences) {
-        if (minutes <= pref.alert_minutes) {
-          const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${minutes} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
+        if (minutesRemaining <= pref.alert_minutes) {
+          const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${minutesRemaining} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
+
+          console.log(`Sending alert for auction ${auction.id} to user ${pref.user_id}`);
 
           // Send Telegram notification
           if (pref.enable_telegram && pref.telegram_token && pref.telegram_chat_id) {
@@ -103,6 +130,7 @@ const handler = async (req: Request): Promise<Response> => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (error) {
+    console.error("Error in send-alerts function:", error);
     return new Response(JSON.stringify({ error: error.message }), {
       status: 500,
       headers: { "Content-Type": "application/json" },
