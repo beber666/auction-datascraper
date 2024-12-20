@@ -77,20 +77,20 @@ export class ScraperService {
 
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
     try {
-      const response = await fetch('https://yssapojsghmotbifhybq.supabase.co/functions/v1/scrape-zenmarket', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ url })
+      const { supabase } = await import('@/integrations/supabase/client');
+      
+      const { data, error } = await supabase.functions.invoke('scrape-zenmarket', {
+        body: { url }
       });
 
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`Failed to scrape auction data: ${error}`);
+      if (error) {
+        console.error('Error scraping Zenmarket:', error);
+        throw new Error('Failed to scrape auction data');
       }
 
-      const data = await response.json();
+      if (!data) {
+        throw new Error('No data returned from scraper');
+      }
       
       return {
         id: Math.random().toString(36).substr(2, 9),
