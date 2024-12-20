@@ -10,7 +10,7 @@ export interface AuctionItem {
   isLoading?: boolean;
   user_id?: string;
   created_at?: string;
-  imageUrl?: string | null; // Added imageUrl property
+  imageUrl?: string | null;
 }
 
 interface ExchangeRates {
@@ -77,43 +77,31 @@ export class ScraperService {
 
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
     try {
-      const response = await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);
-      const data = await response.json();
-      
-      if (!data.contents) {
-        throw new Error("Failed to fetch page contents");
-      }
-
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(data.contents, 'text/html');
-
-      const productName = doc.querySelector('#itemTitle')?.textContent?.trim() || 'N/A';
-      const priceText = doc.querySelector('#lblPriceY')?.textContent?.trim() || '0';
-      const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''));
-      const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0';
-      const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A';
-      
-      // Extract image URL
-      const imageUrl = doc.querySelector('#imgPreview')?.getAttribute('src') || null;
-
-      console.log('Scraped item:', {
-        productName,
-        priceInJPY,
-        numberOfBids,
-        timeRemaining,
-        imageUrl
+      const response = await fetch('https://yssapojsghmotbifhybq.supabase.co/functions/v1/scrape-zenmarket', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ url })
       });
 
+      if (!response.ok) {
+        const error = await response.text();
+        throw new Error(`Failed to scrape auction data: ${error}`);
+      }
+
+      const data = await response.json();
+      
       return {
         id: Math.random().toString(36).substr(2, 9),
-        url,
-        productName,
-        currentPrice: `¥${priceInJPY.toLocaleString()}`,
-        priceInJPY,
-        numberOfBids,
-        timeRemaining,
-        lastUpdated: new Date(),
-        imageUrl // Include imageUrl in the returned object
+        url: data.url,
+        productName: data.productName,
+        currentPrice: data.currentPrice,
+        priceInJPY: data.priceInJPY,
+        numberOfBids: data.numberOfBids,
+        timeRemaining: data.timeRemaining,
+        lastUpdated: new Date(data.lastUpdated),
+        imageUrl: data.imageUrl
       };
     } catch (error) {
       console.error('Error scraping Zenmarket:', error);
