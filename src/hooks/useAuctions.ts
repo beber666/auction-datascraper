@@ -121,16 +121,38 @@ export const useAuctions = (language: string, currency: string) => {
   };
 
   const handleDelete = async (id: string) => {
-    await supabase
-      .from("auctions")
-      .delete()
-      .eq("id", id);
+    try {
+      // First, delete all auction alerts for this auction
+      await supabase
+        .from("auction_alerts")
+        .delete()
+        .eq("auction_id", id);
 
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    toast({
-      title: "Success",
-      description: "Auction removed successfully",
-    });
+      // Then, delete all sent notifications for this auction
+      await supabase
+        .from("sent_notifications")
+        .delete()
+        .eq("auction_id", id);
+
+      // Finally, delete the auction itself
+      await supabase
+        .from("auctions")
+        .delete()
+        .eq("id", id);
+
+      setItems((prev) => prev.filter((item) => item.id !== id));
+      toast({
+        title: "Success",
+        description: "Auction removed successfully",
+      });
+    } catch (error) {
+      console.error("Error deleting auction:", error);
+      toast({
+        title: "Error",
+        description: "Failed to remove auction",
+        variant: "destructive",
+      });
+    }
   };
 
   return {
