@@ -120,10 +120,7 @@ export const useAuctions = (language: string, currency: string) => {
 
   const handleDelete = async (id: string) => {
     try {
-      // Start a transaction by using the same timestamp for all operations
-      const timestamp = new Date().toISOString();
-
-      // First, delete all sent notifications for this auction
+      // Delete sent notifications first
       const { error: notificationsError } = await supabase
         .from("sent_notifications")
         .delete()
@@ -134,7 +131,7 @@ export const useAuctions = (language: string, currency: string) => {
         throw new Error("Failed to delete notifications");
       }
 
-      // Then, delete all auction alerts
+      // Then delete auction alerts
       const { error: alertsError } = await supabase
         .from("auction_alerts")
         .delete()
@@ -145,7 +142,7 @@ export const useAuctions = (language: string, currency: string) => {
         throw new Error("Failed to delete alerts");
       }
 
-      // Finally, delete the auction itself
+      // Finally delete the auction
       const { error: auctionError } = await supabase
         .from("auctions")
         .delete()
@@ -156,7 +153,6 @@ export const useAuctions = (language: string, currency: string) => {
         throw new Error("Failed to delete auction");
       }
 
-      // If we got here, all deletions were successful
       setItems((prev) => prev.filter((item) => item.id !== id));
       toast({
         title: "Success",
