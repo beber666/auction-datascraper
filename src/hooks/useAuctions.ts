@@ -123,22 +123,28 @@ export const useAuctions = (language: string, currency: string) => {
   const handleDelete = async (id: string) => {
     try {
       // First, delete all auction alerts for this auction
-      await supabase
+      const { error: alertsError } = await supabase
         .from("auction_alerts")
         .delete()
         .eq("auction_id", id);
 
+      if (alertsError) throw alertsError;
+
       // Then, delete all sent notifications for this auction
-      await supabase
+      const { error: notificationsError } = await supabase
         .from("sent_notifications")
         .delete()
         .eq("auction_id", id);
 
+      if (notificationsError) throw notificationsError;
+
       // Finally, delete the auction itself
-      await supabase
+      const { error: auctionError } = await supabase
         .from("auctions")
         .delete()
         .eq("id", id);
+
+      if (auctionError) throw auctionError;
 
       setItems((prev) => prev.filter((item) => item.id !== id));
       toast({
