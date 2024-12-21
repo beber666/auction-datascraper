@@ -127,9 +127,10 @@ export const useAuctions = (language: string, currency: string) => {
       const { error: notificationsError } = await supabase
         .from("sent_notifications")
         .delete()
-        .match({ auction_id: id });
+        .eq('auction_id', id);
 
       if (notificationsError) {
+        console.error('Error deleting notifications:', notificationsError);
         throw new Error(`Failed to delete notifications: ${notificationsError.message}`);
       }
       console.log('Successfully deleted notifications');
@@ -139,9 +140,10 @@ export const useAuctions = (language: string, currency: string) => {
       const { error: alertsError } = await supabase
         .from("auction_alerts")
         .delete()
-        .match({ auction_id: id });
+        .eq('auction_id', id);
 
       if (alertsError) {
+        console.error('Error deleting alerts:', alertsError);
         throw new Error(`Failed to delete alerts: ${alertsError.message}`);
       }
       console.log('Successfully deleted alerts');
@@ -151,9 +153,10 @@ export const useAuctions = (language: string, currency: string) => {
       const { error: auctionError } = await supabase
         .from("auctions")
         .delete()
-        .match({ id: id });
+        .eq('id', id);
 
       if (auctionError) {
+        console.error('Error deleting auction:', auctionError);
         throw new Error(`Failed to delete auction: ${auctionError.message}`);
       }
 
