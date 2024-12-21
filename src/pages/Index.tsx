@@ -1,22 +1,34 @@
-import { useState, useEffect } from "react";
-import { AuctionItem, ScraperService } from "@/services/scraper";
+import { useEffect } from "react";
 import { UrlForm } from "@/components/UrlForm";
 import { AuctionTable } from "@/components/AuctionTable";
-import { useToast } from "@/hooks/use-toast";
 import { FeedbackBox } from "@/components/FeedbackBox";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { SettingsPanel } from "@/components/SettingsPanel";
+import { useAuctions } from "@/hooks/useAuctions";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 const Index = () => {
-  const [items, setItems] = useState<AuctionItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [autoRefresh, setAutoRefresh] = useState(false);
-  const [refreshInterval, setRefreshInterval] = useState(1);
-  const [currency, setCurrency] = useState("EUR");
-  const [language, setLanguage] = useState("en");
-  const { toast } = useToast();
   const navigate = useNavigate();
+  const {
+    autoRefresh,
+    refreshInterval,
+    currency,
+    language,
+    handleAutoRefreshChange,
+    handleRefreshIntervalChange,
+    handleCurrencyChange,
+    handleLanguageChange,
+    loadUserPreferences
+  } = useUserPreferences();
+
+  const {
+    items,
+    isLoading,
+    handleSubmit,
+    handleDelete,
+    loadUserAuctions
+  } = useAuctions(language, currency);
 
   useEffect(() => {
     const checkUser = async () => {
@@ -25,244 +37,11 @@ const Index = () => {
         navigate("/login");
         return;
       }
-
-      // Load user preferences including auto refresh settings
-      const { data: profile } = await supabase
-        .from("profiles")
-        .select("preferred_currency, preferred_language, auto_refresh, refresh_interval")
-        .eq("id", session.user.id)
-        .single();
-
-      if (profile) {
-        setCurrency(profile.preferred_currency);
-        setLanguage(profile.preferred_language);
-        setAutoRefresh(profile.auto_refresh || false);
-        setRefreshInterval(profile.refresh_interval || 1);
-      }
-
-      // Load existing auctions
-      const { data: auctions } = await supabase
-        .from("auctions")
-        .select("*")
-        .eq("user_id", session.user.id);
-
-      if (auctions) {
-        const mappedAuctions: AuctionItem[] = auctions.map(auction => ({
-          id: auction.id,
-          url: auction.url,
-          productName: auction.product_name,
-          currentPrice: auction.current_price,
-          priceInJPY: auction.price_in_jpy,
-          numberOfBids: auction.number_of_bids,
-          timeRemaining: auction.time_remaining,
-          lastUpdated: new Date(auction.last_updated),
-          user_id: auction.user_id,
-          created_at: auction.created_at
-        }));
-        setItems(mappedAuctions);
-      }
+      await loadUserPreferences();
+      await loadUserAuctions();
     };
     checkUser();
   }, [navigate]);
-
-  useEffect(() => {
-    let intervalId: NodeJS.Timeout;
-
-    const refreshAuctions = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const updatedItems = await Promise.all(
-        items.map(async (item) => {
-          if (item.isLoading) return item;
-          try {
-            const newItem = await ScraperService.scrapeZenmarket(item.url);
-            newItem.currentPrice = await ScraperService.convertPrice(
-              newItem.priceInJPY, 
-              currency
-            );
-            if (language !== "en") {
-              newItem.productName = await ScraperService.translateText(
-                newItem.productName, 
-                language
-              );
-            }
-            return { ...newItem, id: item.id, user_id: session.user.id };
-          } catch (error) {
-            console.error(`Failed to refresh auction ${item.url}:`, error);
-            return item;
-          }
-        })
-      );
-      setItems(updatedItems);
-
-      // Update items in database
-      for (const item of updatedItems) {
-        await supabase
-          .from("auctions")
-          .update({
-            product_name: item.productName,
-            current_price: item.currentPrice,
-            price_in_jpy: item.priceInJPY,
-            number_of_bids: item.numberOfBids,
-            time_remaining: item.timeRemaining,
-            last_updated: new Date().toISOString(),
-          })
-          .eq("id", item.id);
-      }
-    };
-
-    if (autoRefresh && refreshInterval > 0) {
-      intervalId = setInterval(refreshAuctions, refreshInterval * 60 * 1000);
-    }
-
-    return () => {
-      if (intervalId) {
-        clearInterval(intervalId);
-      }
-    };
-  }, [autoRefresh, refreshInterval, items, currency, language]);
-
-  const handleSubmit = async (url: string) => {
-    setIsLoading(true);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const tempItem: AuctionItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      url,
-      productName: "Loading...",
-      currentPrice: "...",
-      priceInJPY: 0,
-      numberOfBids: "...",
-      timeRemaining: "...",
-      lastUpdated: new Date(),
-      isLoading: true,
-      user_id: session.user.id
-    };
-
-    setItems(prev => [...prev, tempItem]);
-    setIsLoading(false);
-
-    try {
-      const item = await ScraperService.scrapeZenmarket(url);
-      
-      item.currentPrice = await ScraperService.convertPrice(
-        item.priceInJPY, 
-        currency
-      );
-
-      if (language !== "en") {
-        item.productName = await ScraperService.translateText(
-          item.productName, 
-          language
-        );
-      }
-
-      const { data: savedItem } = await supabase
-        .from("auctions")
-        .insert([{
-          url: item.url,
-          product_name: item.productName,
-          current_price: item.currentPrice,
-          price_in_jpy: item.priceInJPY,
-          number_of_bids: item.numberOfBids,
-          time_remaining: item.timeRemaining,
-          last_updated: item.lastUpdated.toISOString(),
-          user_id: session.user.id
-        }])
-        .select()
-        .single();
-
-      if (savedItem) {
-        const mappedItem: AuctionItem = {
-          id: savedItem.id,
-          url: savedItem.url,
-          productName: savedItem.product_name,
-          currentPrice: savedItem.current_price,
-          priceInJPY: savedItem.price_in_jpy,
-          numberOfBids: savedItem.number_of_bids,
-          timeRemaining: savedItem.time_remaining,
-          lastUpdated: new Date(savedItem.last_updated),
-          user_id: savedItem.user_id,
-          created_at: savedItem.created_at
-        };
-
-        setItems(prev => prev.map(i => 
-          i.id === tempItem.id ? mappedItem : i
-        ));
-
-        toast({
-          title: "Success",
-          description: "Auction added successfully",
-        });
-      }
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to fetch auction data",
-        variant: "destructive",
-      });
-      setItems(prev => prev.filter(i => i.id !== tempItem.id));
-    }
-  };
-
-  const handleDelete = async (id: string) => {
-    await supabase
-      .from("auctions")
-      .delete()
-      .eq("id", id);
-
-    setItems((prev) => prev.filter((item) => item.id !== id));
-    toast({
-      title: "Success",
-      description: "Auction removed successfully",
-    });
-  };
-
-  const handleAutoRefreshChange = async (enabled: boolean) => {
-    setAutoRefresh(enabled);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
-        .from("profiles")
-        .update({ auto_refresh: enabled })
-        .eq("id", session.user.id);
-    }
-  };
-
-  const handleRefreshIntervalChange = async (minutes: number) => {
-    setRefreshInterval(minutes);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
-        .from("profiles")
-        .update({ refresh_interval: minutes })
-        .eq("id", session.user.id);
-    }
-  };
-
-  const handleCurrencyChange = async (newCurrency: string) => {
-    setCurrency(newCurrency);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
-        .from("profiles")
-        .update({ preferred_currency: newCurrency })
-        .eq("id", session.user.id);
-    }
-  };
-
-  const handleLanguageChange = async (newLanguage: string) => {
-    setLanguage(newLanguage);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
-        .from("profiles")
-        .update({ preferred_language: newLanguage })
-        .eq("id", session.user.id);
-    }
-  };
 
   return (
     <div className="container mx-auto py-8 px-4">
