@@ -120,7 +120,10 @@ export const useAuctions = (language: string, currency: string) => {
 
   const handleDelete = async (id: string) => {
     try {
-      // Delete sent notifications first
+      console.log('Starting deletion process for auction:', id);
+      
+      // First, delete all sent notifications for this auction
+      console.log('Deleting sent notifications...');
       const { error: notificationsError } = await supabase
         .from("sent_notifications")
         .delete()
@@ -128,10 +131,11 @@ export const useAuctions = (language: string, currency: string) => {
 
       if (notificationsError) {
         console.error("Error deleting notifications:", notificationsError);
-        throw new Error("Failed to delete notifications");
+        throw new Error(`Failed to delete notifications: ${notificationsError.message}`);
       }
 
       // Then delete auction alerts
+      console.log('Deleting auction alerts...');
       const { error: alertsError } = await supabase
         .from("auction_alerts")
         .delete()
@@ -139,20 +143,23 @@ export const useAuctions = (language: string, currency: string) => {
 
       if (alertsError) {
         console.error("Error deleting alerts:", alertsError);
-        throw new Error("Failed to delete alerts");
+        throw new Error(`Failed to delete alerts: ${alertsError.message}`);
       }
 
-      // Finally delete the auction
+      // Finally delete the auction itself
+      console.log('Deleting auction...');
       const { error: auctionError } = await supabase
         .from("auctions")
         .delete()
-        .eq("id", id);
+        .eq("id", id)
+        .single();
 
       if (auctionError) {
         console.error("Error deleting auction:", auctionError);
-        throw new Error("Failed to delete auction");
+        throw new Error(`Failed to delete auction: ${auctionError.message}`);
       }
 
+      console.log('Successfully deleted auction and all related records');
       setItems((prev) => prev.filter((item) => item.id !== id));
       toast({
         title: "Success",
@@ -162,7 +169,7 @@ export const useAuctions = (language: string, currency: string) => {
       console.error("Error in deletion process:", error);
       toast({
         title: "Error",
-        description: "Failed to remove auction. Please try again.",
+        description: error.message || "Failed to remove auction. Please try again.",
         variant: "destructive",
       });
     }
