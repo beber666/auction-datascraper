@@ -124,29 +124,27 @@ export const useAuctions = (language: string, currency: string) => {
       
       // First, delete all sent notifications for this auction
       console.log('Deleting sent notifications...');
-      const { error: notificationsError, count: notificationsCount } = await supabase
+      const { error: notificationsError } = await supabase
         .from("sent_notifications")
         .delete()
-        .match({ auction_id: id })
-        .select('count');
+        .match({ auction_id: id });
 
       if (notificationsError) {
         throw new Error(`Failed to delete notifications: ${notificationsError.message}`);
       }
-      console.log(`Deleted ${notificationsCount} notifications`);
+      console.log('Successfully deleted notifications');
 
       // Then delete auction alerts
       console.log('Deleting auction alerts...');
-      const { error: alertsError, count: alertsCount } = await supabase
+      const { error: alertsError } = await supabase
         .from("auction_alerts")
         .delete()
-        .match({ auction_id: id })
-        .select('count');
+        .match({ auction_id: id });
 
       if (alertsError) {
         throw new Error(`Failed to delete alerts: ${alertsError.message}`);
       }
-      console.log(`Deleted ${alertsCount} alerts`);
+      console.log('Successfully deleted alerts');
 
       // Finally delete the auction itself
       console.log('Deleting auction...');
