@@ -58,7 +58,6 @@ export const useAuctions = (language: string, currency: string) => {
     try {
       const item = await ScraperService.scrapeZenmarket(url);
       
-      // First translate the product name if needed
       if (language !== "en") {
         item.productName = await ScraperService.translateText(
           item.productName, 
@@ -66,7 +65,6 @@ export const useAuctions = (language: string, currency: string) => {
         );
       }
 
-      // Then convert the currency
       item.currentPrice = await ScraperService.convertPrice(
         item.priceInJPY, 
         currency
@@ -76,7 +74,7 @@ export const useAuctions = (language: string, currency: string) => {
         .from("auctions")
         .insert([{
           url: item.url,
-          product_name: item.productName, // Save the translated name
+          product_name: item.productName,
           current_price: item.currentPrice,
           price_in_jpy: item.priceInJPY,
           number_of_bids: item.numberOfBids,
@@ -122,21 +120,30 @@ export const useAuctions = (language: string, currency: string) => {
 
   const handleDelete = async (id: string) => {
     try {
-      // First, delete all auction alerts for this auction
-      const { error: alertsError } = await supabase
-        .from("auction_alerts")
-        .delete()
-        .eq("auction_id", id);
+      // Start a transaction by using the same timestamp for all operations
+      const timestamp = new Date().toISOString();
 
-      if (alertsError) throw alertsError;
-
-      // Then, delete all sent notifications for this auction
+      // First, delete all sent notifications for this auction
       const { error: notificationsError } = await supabase
         .from("sent_notifications")
         .delete()
         .eq("auction_id", id);
 
-      if (notificationsError) throw notificationsError;
+      if (notificationsError) {
+        console.error("Error deleting notifications:", notificationsError);
+        throw new Error("Failed to delete notifications");
+      }
+
+      // Then, delete all auction alerts
+      const { error: alertsError } = await supabase
+        .from("auction_alerts")
+        .delete()
+        .eq("auction_id", id);
+
+      if (alertsError) {
+        console.error("Error deleting alerts:", alertsError);
+        throw new Error("Failed to delete alerts");
+      }
 
       // Finally, delete the auction itself
       const { error: auctionError } = await supabase
@@ -144,18 +151,22 @@ export const useAuctions = (language: string, currency: string) => {
         .delete()
         .eq("id", id);
 
-      if (auctionError) throw auctionError;
+      if (auctionError) {
+        console.error("Error deleting auction:", auctionError);
+        throw new Error("Failed to delete auction");
+      }
 
+      // If we got here, all deletions were successful
       setItems((prev) => prev.filter((item) => item.id !== id));
       toast({
         title: "Success",
         description: "Auction removed successfully",
       });
     } catch (error) {
-      console.error("Error deleting auction:", error);
+      console.error("Error in deletion process:", error);
       toast({
         title: "Error",
-        description: "Failed to remove auction",
+        description: "Failed to remove auction. Please try again.",
         variant: "destructive",
       });
     }
