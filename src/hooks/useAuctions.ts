@@ -121,13 +121,18 @@ export const useAuctions = (language: string, currency: string) => {
   const handleDelete = async (id: string) => {
     try {
       console.log('Starting deletion process for auction:', id);
-      
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        throw new Error('User not authenticated');
+      }
+
       // First, delete all sent notifications for this auction
       console.log('Deleting sent notifications...');
       const { error: notificationsError } = await supabase
         .from("sent_notifications")
         .delete()
-        .eq('auction_id', id);
+        .eq('auction_id', id)
+        .eq('user_id', session.user.id);
 
       if (notificationsError) {
         console.error('Error deleting notifications:', notificationsError);
@@ -140,7 +145,8 @@ export const useAuctions = (language: string, currency: string) => {
       const { error: alertsError } = await supabase
         .from("auction_alerts")
         .delete()
-        .eq('auction_id', id);
+        .eq('auction_id', id)
+        .eq('user_id', session.user.id);
 
       if (alertsError) {
         console.error('Error deleting alerts:', alertsError);
@@ -153,7 +159,8 @@ export const useAuctions = (language: string, currency: string) => {
       const { error: auctionError } = await supabase
         .from("auctions")
         .delete()
-        .eq('id', id);
+        .eq('id', id)
+        .eq('user_id', session.user.id);
 
       if (auctionError) {
         console.error('Error deleting auction:', auctionError);
