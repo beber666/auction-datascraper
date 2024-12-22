@@ -41,7 +41,8 @@ export class ScraperService {
       // Log the incoming translation request
       console.log('Starting translation:', {
         originalText: text,
-        targetLanguage: targetLang
+        targetLanguage: targetLang,
+        targetLanguageType: typeof targetLang
       });
 
       // Skip translation if target language is Japanese or text is empty
@@ -57,9 +58,13 @@ export class ScraperService {
         return text;
       }
 
+      // Ensure target language is lowercase for the API
+      const normalizedTargetLang = targetLang.toLowerCase();
+      console.log('Normalized target language:', normalizedTargetLang);
+
       // Use a more reliable translation endpoint
       const encodedText = encodeURIComponent(text);
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=${targetLang}&dt=t&q=${encodedText}`;
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=${normalizedTargetLang}&dt=t&q=${encodedText}`;
       
       console.log('Making translation request to:', url);
       
@@ -70,7 +75,8 @@ export class ScraperService {
         console.error('Translation API error:', {
           status: response.status,
           statusText: response.statusText,
-          error: errorText
+          error: errorText,
+          url: url
         });
         return text;
       }
@@ -87,7 +93,7 @@ export class ScraperService {
       console.log('Translation successful:', {
         original: text,
         translated: translatedText,
-        targetLang: targetLang
+        targetLang: normalizedTargetLang
       });
 
       return translatedText;
