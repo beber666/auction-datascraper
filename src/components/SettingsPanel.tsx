@@ -61,7 +61,7 @@ export const SettingsPanel = ({
               <SelectItem value="ja">Japanese</SelectItem>
               <SelectItem value="de">German</SelectItem>
               <SelectItem value="es">Spanish</SelectItem>
-              <SelectItem value="en">French</SelectItem>
+              <SelectItem value="en">English</SelectItem>
             </SelectContent>
           </Select>
 
