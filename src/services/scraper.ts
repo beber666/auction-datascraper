@@ -38,23 +38,28 @@ export class ScraperService {
 
   static async translateText(text: string, targetLang: string): Promise<string> {
     try {
-      console.log('Translating text:', text, 'to language:', targetLang); // Debug log
-      
-      // Skip translation if the target language is Japanese
-      if (targetLang === 'ja') return text;
-      
+      console.log('Translation request:', {
+        text,
+        targetLang,
+        textLength: text.length,
+        hasJapanese: /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(text)
+      });
+
+      // Skip translation if target language is Japanese or if text is empty
+      if (targetLang === 'ja' || !text.trim()) return text;
+
       const encodedText = encodeURIComponent(text);
       const response = await fetch(
         `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=${targetLang}&dt=t&q=${encodedText}`
       );
 
       if (!response.ok) {
-        console.error('Translation failed:', await response.text());
+        console.error('Translation API error:', await response.text());
         return text;
       }
 
       const data = await response.json();
-      console.log('Translation API response:', data); // Debug log
+      console.log('Translation API response:', JSON.stringify(data));
 
       if (!data || !data[0] || !data[0][0] || !data[0][0][0]) {
         console.error('Unexpected translation response format:', data);
@@ -62,7 +67,12 @@ export class ScraperService {
       }
 
       const translatedText = data[0][0][0];
-      console.log('Translated result:', translatedText); // Debug log
+      console.log('Translation result:', {
+        original: text,
+        translated: translatedText,
+        targetLang
+      });
+
       return translatedText;
     } catch (error) {
       console.error('Translation error:', error);

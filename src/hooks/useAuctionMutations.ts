@@ -12,7 +12,15 @@ export const useAuctionMutations = (language: string, currency: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    console.log('Current language setting:', language); // Debug log
+    // Get user's language preference from profile
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('preferred_language')
+      .eq('id', session.user.id)
+      .single();
+
+    const userLanguage = profile?.preferred_language || language || 'en';
+    console.log('User language preference:', userLanguage);
 
     const tempItem: AuctionItem = {
       id: Math.random().toString(36).substr(2, 9),
@@ -30,14 +38,14 @@ export const useAuctionMutations = (language: string, currency: string) => {
     try {
       // First, scrape the initial data
       const scrapedItem = await ScraperService.scrapeZenmarket(url);
-      console.log('Original product name:', scrapedItem.productName); // Debug log
+      console.log('Original product name (Japanese):', scrapedItem.productName);
       
-      // Explicitly translate from Japanese to the selected language
+      // Explicitly translate from Japanese to the user's preferred language
       const translatedName = await ScraperService.translateText(
         scrapedItem.productName,
-        language || 'en' // Fallback to English if no language is specified
+        userLanguage
       );
-      console.log('Translated name:', translatedName); // Debug log
+      console.log('Translated name:', translatedName);
 
       // Convert the price to the selected currency
       const convertedPrice = await ScraperService.convertPrice(
