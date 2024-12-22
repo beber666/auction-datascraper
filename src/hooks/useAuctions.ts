@@ -120,42 +120,12 @@ export const useAuctions = (language: string, currency: string) => {
 
   const handleDelete = async (id: string) => {
     try {
-      console.log('Starting deletion process for auction:', id);
       const { data: { session } } = await supabase.auth.getSession();
       if (!session) {
         throw new Error('User not authenticated');
       }
 
-      // First, delete all sent notifications for this auction
-      console.log('Deleting sent notifications...');
-      const { error: notificationsError } = await supabase
-        .from("sent_notifications")
-        .delete()
-        .eq('auction_id', id)
-        .eq('user_id', session.user.id);
-
-      if (notificationsError) {
-        console.error('Error deleting notifications:', notificationsError);
-        throw new Error(`Failed to delete notifications: ${notificationsError.message}`);
-      }
-      console.log('Successfully deleted notifications');
-
-      // Then delete auction alerts
-      console.log('Deleting auction alerts...');
-      const { error: alertsError } = await supabase
-        .from("auction_alerts")
-        .delete()
-        .eq('auction_id', id)
-        .eq('user_id', session.user.id);
-
-      if (alertsError) {
-        console.error('Error deleting alerts:', alertsError);
-        throw new Error(`Failed to delete alerts: ${alertsError.message}`);
-      }
-      console.log('Successfully deleted alerts');
-
-      // Finally delete the auction itself
-      console.log('Deleting auction...');
+      // Delete the auction (related records will be deleted automatically due to CASCADE)
       const { error: auctionError } = await supabase
         .from("auctions")
         .delete()
@@ -163,11 +133,9 @@ export const useAuctions = (language: string, currency: string) => {
         .eq('user_id', session.user.id);
 
       if (auctionError) {
-        console.error('Error deleting auction:', auctionError);
         throw new Error(`Failed to delete auction: ${auctionError.message}`);
       }
 
-      console.log('Successfully deleted auction and all related records');
       setItems((prev) => prev.filter((item) => item.id !== id));
       toast({
         title: "Success",
