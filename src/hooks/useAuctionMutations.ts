@@ -29,10 +29,11 @@ export const useAuctionMutations = (language: string, currency: string) => {
       // First, scrape the initial data
       const scrapedItem = await ScraperService.scrapeZenmarket(url);
       
-      // Then translate the product name if needed
-      const translatedName = language !== "en" 
-        ? await ScraperService.translateText(scrapedItem.productName, language)
-        : scrapedItem.productName;
+      // Always translate from Japanese to the selected language
+      const translatedName = await ScraperService.translateText(
+        scrapedItem.productName,
+        language || 'en' // Fallback to English if no language is specified
+      );
 
       // Convert the price to the selected currency
       const convertedPrice = await ScraperService.convertPrice(
