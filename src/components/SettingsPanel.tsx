@@ -57,11 +57,11 @@ export const SettingsPanel = ({
               <SelectValue placeholder="Language" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="en">English</SelectItem>
               <SelectItem value="fr">French</SelectItem>
               <SelectItem value="ja">Japanese</SelectItem>
               <SelectItem value="de">German</SelectItem>
               <SelectItem value="es">Spanish</SelectItem>
+              <SelectItem value="en">French</SelectItem>
             </SelectContent>
           </Select>
 
