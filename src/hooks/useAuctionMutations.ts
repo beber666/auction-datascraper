@@ -26,21 +26,28 @@ export const useAuctionMutations = (language: string, currency: string) => {
     };
 
     try {
-      const item = await ScraperService.scrapeZenmarket(url);
+      // First, scrape the initial data
+      const scrapedItem = await ScraperService.scrapeZenmarket(url);
       
-      if (language !== "en") {
-        item.productName = await ScraperService.translateText(
-          item.productName, 
-          language
-        );
-      }
+      // Then translate the product name if needed
+      const translatedName = language !== "en" 
+        ? await ScraperService.translateText(scrapedItem.productName, language)
+        : scrapedItem.productName;
 
-      item.currentPrice = await ScraperService.convertPrice(
-        item.priceInJPY, 
+      // Convert the price to the selected currency
+      const convertedPrice = await ScraperService.convertPrice(
+        scrapedItem.priceInJPY, 
         currency
       );
 
-      const { data: savedItem } = await supabase
+      // Prepare the item with translated name and converted price
+      const item = {
+        ...scrapedItem,
+        productName: translatedName,
+        currentPrice: convertedPrice
+      };
+
+      const { data: savedItem, error } = await supabase
         .from("auctions")
         .insert([{
           url: item.url,
@@ -50,10 +57,13 @@ export const useAuctionMutations = (language: string, currency: string) => {
           number_of_bids: item.numberOfBids,
           time_remaining: item.timeRemaining,
           last_updated: item.lastUpdated.toISOString(),
-          user_id: session.user.id
+          user_id: session.user.id,
+          image_url: item.imageUrl
         }])
         .select()
         .single();
+
+      if (error) throw error;
 
       if (savedItem) {
         const mappedItem: AuctionItem = {
@@ -66,12 +76,14 @@ export const useAuctionMutations = (language: string, currency: string) => {
           timeRemaining: savedItem.time_remaining,
           lastUpdated: new Date(savedItem.last_updated),
           user_id: savedItem.user_id,
-          created_at: savedItem.created_at
+          created_at: savedItem.created_at,
+          imageUrl: savedItem.image_url
         };
 
         return mappedItem;
       }
     } catch (error) {
+      console.error("Error adding auction:", error);
       toast({
         title: "Error",
         description: "Failed to fetch auction data",
@@ -90,15 +102,13 @@ export const useAuctionMutations = (language: string, currency: string) => {
         throw new Error('User not authenticated');
       }
 
-      const { error: auctionError } = await supabase
+      const { error } = await supabase
         .from("auctions")
         .delete()
         .eq('id', id)
         .eq('user_id', session.user.id);
 
-      if (auctionError) {
-        throw new Error(`Failed to delete auction: ${auctionError.message}`);
-      }
+      if (error) throw error;
 
       toast({
         title: "Success",
