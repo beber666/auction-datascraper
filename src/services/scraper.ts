@@ -58,8 +58,17 @@ export class ScraperService {
         return text;
       }
 
-      // Ensure target language is lowercase for the API
-      const normalizedTargetLang = targetLang.toLowerCase();
+      // Map language codes to Google Translate format
+      const languageMap: { [key: string]: string } = {
+        en: 'en',    // English
+        fr: 'fr',    // French
+        de: 'de',    // German
+        es: 'es',    // Spanish
+        ja: 'ja'     // Japanese
+      };
+
+      // Get the correct language code, default to 'en' if not found
+      const normalizedTargetLang = languageMap[targetLang.toLowerCase()] || 'en';
       console.log('Normalized target language:', normalizedTargetLang);
 
       // Use a more reliable translation endpoint
