@@ -38,14 +38,23 @@ export const useAuctionMutations = (language: string, currency: string) => {
     try {
       // First, scrape the initial data
       const scrapedItem = await ScraperService.scrapeZenmarket(url);
-      console.log('Original product name (Japanese):', scrapedItem.productName);
-      
-      // Explicitly translate from Japanese to the user's preferred language
-      const translatedName = await ScraperService.translateText(
-        scrapedItem.productName,
-        userLanguage
-      );
-      console.log('Translated name:', translatedName);
+      console.log('Scraped item:', {
+        productName: scrapedItem.productName,
+        language: userLanguage
+      });
+
+      // Translate the product name
+      let translatedName = scrapedItem.productName;
+      if (userLanguage !== 'ja') {
+        translatedName = await ScraperService.translateText(
+          scrapedItem.productName,
+          userLanguage
+        );
+        console.log('Translation result:', {
+          original: scrapedItem.productName,
+          translated: translatedName
+        });
+      }
 
       // Convert the price to the selected currency
       const convertedPrice = await ScraperService.convertPrice(

@@ -38,39 +38,56 @@ export class ScraperService {
 
   static async translateText(text: string, targetLang: string): Promise<string> {
     try {
-      console.log('Translation request:', {
-        text,
-        targetLang,
-        textLength: text.length,
-        hasJapanese: /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(text)
+      // Log the incoming translation request
+      console.log('Starting translation:', {
+        originalText: text,
+        targetLanguage: targetLang
       });
 
-      // Skip translation if target language is Japanese or if text is empty
-      if (targetLang === 'ja' || !text.trim()) return text;
+      // Skip translation if target language is Japanese or text is empty
+      if (targetLang === 'ja' || !text.trim()) {
+        console.log('Skipping translation - Japanese target or empty text');
+        return text;
+      }
 
+      // Check if text contains Japanese characters
+      const hasJapanese = /[\u3000-\u303f\u3040-\u309f\u30a0-\u30ff\uff00-\uff9f\u4e00-\u9faf\u3400-\u4dbf]/.test(text);
+      if (!hasJapanese) {
+        console.log('Text does not contain Japanese characters, skipping translation');
+        return text;
+      }
+
+      // Use a more reliable translation endpoint
       const encodedText = encodeURIComponent(text);
-      const response = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=${targetLang}&dt=t&q=${encodedText}`
-      );
-
+      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=${targetLang}&dt=t&q=${encodedText}`;
+      
+      console.log('Making translation request to:', url);
+      
+      const response = await fetch(url);
+      
       if (!response.ok) {
-        console.error('Translation API error:', await response.text());
+        const errorText = await response.text();
+        console.error('Translation API error:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorText
+        });
         return text;
       }
 
       const data = await response.json();
-      console.log('Translation API response:', JSON.stringify(data));
+      console.log('Raw translation response:', JSON.stringify(data));
 
-      if (!data || !data[0] || !data[0][0] || !data[0][0][0]) {
-        console.error('Unexpected translation response format:', data);
+      if (!data?.[0]?.[0]?.[0]) {
+        console.error('Invalid translation response format:', data);
         return text;
       }
 
       const translatedText = data[0][0][0];
-      console.log('Translation result:', {
+      console.log('Translation successful:', {
         original: text,
         translated: translatedText,
-        targetLang
+        targetLang: targetLang
       });
 
       return translatedText;
