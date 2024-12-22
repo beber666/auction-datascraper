@@ -58,20 +58,10 @@ export class ScraperService {
         return text;
       }
 
-      // Map language codes to Google Translate format
-      const languageMap: { [key: string]: string } = {
-        en: 'en',    // English
-        fr: 'fr',    // French
-        de: 'de',    // German
-        es: 'es',    // Spanish
-        ja: 'ja'     // Japanese
-      };
-
-      // Get the correct language code, default to 'en' if not found
-      const normalizedTargetLang = languageMap[targetLang.toLowerCase()] || 'en';
-      console.log('Normalized target language:', normalizedTargetLang);
-
-      // Use a more reliable translation endpoint
+      // For English translations, use 'en-US' instead of just 'en'
+      const normalizedTargetLang = targetLang.toLowerCase() === 'en' ? 'en-US' : targetLang.toLowerCase();
+      console.log('Using target language code:', normalizedTargetLang);
+      
       const encodedText = encodeURIComponent(text);
       const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=${normalizedTargetLang}&dt=t&q=${encodedText}`;
       
