@@ -3,6 +3,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 export const PackageCalculatorTool = () => {
   const [totalPrice, setTotalPrice] = useState("");
@@ -13,7 +14,19 @@ export const PackageCalculatorTool = () => {
   const calculatePrices = () => {
     try {
       const price = parseFloat(totalPrice);
-      const weightArray = weights.split(",").map((w) => parseFloat(w.trim()));
+      
+      // Clean and parse the weights input
+      // Split by newlines and commas, clean up whitespace, filter empty strings
+      const weightArray = weights
+        .split(/[\n,]/)
+        .map(w => w.trim())
+        .filter(w => w !== "")
+        .map(w => parseFloat(w));
+
+      if (weightArray.length === 0) {
+        throw new Error("Please enter at least one weight");
+      }
+
       const totalWeight = weightArray.reduce((sum, weight) => sum + weight, 0);
 
       if (isNaN(price) || weightArray.some(isNaN)) {
@@ -48,12 +61,13 @@ export const PackageCalculatorTool = () => {
       </div>
 
       <div>
-        <Label htmlFor="weights">Package Weights (comma-separated)</Label>
-        <Input
+        <Label htmlFor="weights">Package Weights</Label>
+        <Textarea
           id="weights"
           value={weights}
           onChange={(e) => setWeights(e.target.value)}
-          placeholder="e.g., 1.5, 2.3, 0.8"
+          placeholder="Enter weights (separated by commas or new lines)&#10;Example:&#10;30,90&#10;200,2&#10;100"
+          className="min-h-[120px]"
         />
       </div>
 
