@@ -34,13 +34,18 @@ function parseTimeRemaining(timeStr: string): number {
   }
 
   // Match patterns for minutes in different languages
-  const minuteMatches = str.match(/(\d+)\s*(minute|minuto)/);
+  const minuteMatches = str.match(/(\d+)\s*(min|minute|minuto)/);
   if (minuteMatches) {
     minutes = parseInt(minuteMatches[1]);
   }
 
   // Convert everything to minutes
   return (days * 24 * 60) + (hours * 60) + minutes;
+}
+
+function formatTimeRemaining(minutes: number): string {
+  if (minutes < 1) return "less than a minute";
+  return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
 }
 
 async function sendTelegramMessage(botToken: string, chatId: string, message: string) {
@@ -131,7 +136,8 @@ const handler = async (req: Request): Promise<Response> => {
             continue;
           }
 
-          const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${minutesRemaining} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
+          const timeRemainingText = formatTimeRemaining(minutesRemaining);
+          const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${timeRemainingText}!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
 
           console.log(`Sending alert for auction ${auction.id} to user ${pref.user_id}`);
 
