@@ -1,6 +1,4 @@
-import type { TooltipContentProps } from "@radix-ui/react-tooltip";
-
-export interface SidebarContextType {
+export type SidebarContextType = {
   state: "expanded" | "collapsed";
   open: boolean;
   setOpen: (open: boolean) => void;
@@ -8,10 +6,4 @@ export interface SidebarContextType {
   setOpenMobile: (open: boolean) => void;
   isMobile: boolean;
   toggleSidebar: () => void;
-}
-
-export interface SidebarMenuButtonProps {
-  asChild?: boolean;
-  isActive?: boolean;
-  tooltip?: string | TooltipContentProps;
-}
+};

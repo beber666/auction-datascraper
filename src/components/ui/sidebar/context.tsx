@@ -1,15 +1,7 @@
 import * as React from "react";
 import { SidebarContextType } from "./types";
 
-export const SidebarContext = React.createContext<SidebarContextType>({
-  state: "expanded",
-  open: true,
-  setOpen: () => {},
-  openMobile: false,
-  setOpenMobile: () => {},
-  isMobile: false,
-  toggleSidebar: () => {},
-});
+const SidebarContext = React.createContext<SidebarContextType | null>(null);
 
 export function useSidebar() {
   const context = React.useContext(SidebarContext);
