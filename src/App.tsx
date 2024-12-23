@@ -5,7 +5,7 @@ import { AppSidebar } from "@/components/AppSidebar";
 import Index from "@/pages/Index";
 import Account from "@/pages/Account";
 import Login from "@/pages/Login";
-import CurrencyConverter from "@/pages/tools/CurrencyConverter";
+import Tools from "@/pages/Tools";
 
 function App() {
   return (
@@ -19,7 +19,7 @@ function App() {
                 <Route path="/" element={<Index />} />
                 <Route path="/account" element={<Account />} />
                 <Route path="/login" element={<Login />} />
-                <Route path="/tools/currency-converter" element={<CurrencyConverter />} />
+                <Route path="/tools" element={<Tools />} />
               </Routes>
             </main>
           </div>
