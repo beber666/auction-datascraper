@@ -21,6 +21,7 @@ export const PackageCalculatorTool = () => {
         .split(/[\n,]/)
         .map(w => w.trim())
         .filter(w => w !== "")
+        .filter(w => !isNaN(parseFloat(w))) // Only keep valid numbers
         .map(w => parseFloat(w));
 
       if (weightArray.length === 0) {
@@ -29,8 +30,8 @@ export const PackageCalculatorTool = () => {
 
       const totalWeight = weightArray.reduce((sum, weight) => sum + weight, 0);
 
-      if (isNaN(price) || weightArray.some(isNaN)) {
-        throw new Error("Please enter valid numbers");
+      if (isNaN(price)) {
+        throw new Error("Please enter a valid total price");
       }
 
       const shares = weightArray.map((weight) =>
@@ -66,7 +67,7 @@ export const PackageCalculatorTool = () => {
           id="weights"
           value={weights}
           onChange={(e) => setWeights(e.target.value)}
-          placeholder="Enter weights (separated by commas or new lines)&#10;Example:&#10;30,90&#10;200,2&#10;100"
+          placeholder="Enter weights (separated by commas or new lines)&#10;Example:&#10;10&#10;10&#10;20"
           className="min-h-[120px]"
         />
       </div>
