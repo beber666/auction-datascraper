@@ -12,42 +12,6 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-function parseTimeRemaining(timeStr: string): number {
-  // Convert to lowercase for easier matching
-  const str = timeStr.toLowerCase();
-  
-  // Initialize variables for days and hours
-  let days = 0;
-  let hours = 0;
-  let minutes = 0;
-
-  // Match patterns for days in different languages
-  const dayMatches = str.match(/(\d+)\s*(day|jour|día|tag)/);
-  if (dayMatches) {
-    days = parseInt(dayMatches[1]);
-  }
-
-  // Match patterns for hours in different languages
-  const hourMatches = str.match(/(\d+)\s*(hour|heure|hora|stunde)/);
-  if (hourMatches) {
-    hours = parseInt(hourMatches[1]);
-  }
-
-  // Match patterns for minutes in different languages
-  const minuteMatches = str.match(/(\d+)\s*(min|minute|minuto)/);
-  if (minuteMatches) {
-    minutes = parseInt(minuteMatches[1]);
-  }
-
-  // Convert everything to minutes
-  return (days * 24 * 60) + (hours * 60) + minutes;
-}
-
-function formatTimeRemaining(minutes: number): string {
-  if (minutes < 1) return "less than a minute";
-  return `${minutes} minute${minutes !== 1 ? 's' : ''}`;
-}
-
 async function sendTelegramMessage(botToken: string, chatId: string, message: string) {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
   await fetch(url, {
@@ -88,77 +52,78 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log("Starting alert check...");
     
-    // Get auctions that are being tracked
-    const { data: auctions, error: auctionsError } = await supabase
+    const now = new Date();
+    
+    // Get auctions that are about to end and have alerts set up
+    const { data: auctionsToNotify, error: auctionsError } = await supabase
       .from("auctions")
       .select(`
         *,
         auction_alerts(user_id),
-        profiles!auctions_user_id_fkey(*)
+        alert_preferences!inner(*)
       `)
-      .neq("time_remaining", "Ended");
+      .not('end_time', 'is', null)
+      .gt('end_time', now.toISOString())
+      .order('end_time', { ascending: true });
 
     if (auctionsError) throw auctionsError;
 
-    console.log(`Processing ${auctions?.length || 0} active auctions`);
+    console.log(`Processing ${auctionsToNotify?.length || 0} upcoming auctions`);
 
-    for (const auction of auctions || []) {
-      if (!auction.time_remaining) continue;
+    for (const auction of auctionsToNotify || []) {
+      const endTime = new Date(auction.end_time);
+      const minutesUntilEnd = (endTime.getTime() - now.getTime()) / (1000 * 60);
 
-      // Parse the time remaining into minutes
-      const minutesRemaining = parseTimeRemaining(auction.time_remaining);
-      console.log(`Auction ${auction.id} has ${minutesRemaining} minutes remaining`);
-
-      // Get alert preferences for users who have alerts for this auction
-      const { data: preferences, error: preferencesError } = await supabase
-        .from("alert_preferences")
-        .select("*")
-        .in(
-          "user_id",
-          auction.auction_alerts.map((alert: any) => alert.user_id)
-        );
-
-      if (preferencesError) throw preferencesError;
-
-      for (const pref of preferences || []) {
-        if (minutesRemaining <= pref.alert_minutes) {
+      // Process each alert preference
+      for (const alertPref of auction.alert_preferences) {
+        // Check if it's time to send the alert (within 1 minute of the alert time)
+        if (Math.abs(minutesUntilEnd - alertPref.alert_minutes) <= 1) {
           // Check if we've already sent this notification
           const { data: existingNotification } = await supabase
             .from("sent_notifications")
             .select("id")
-            .eq("user_id", pref.user_id)
+            .eq("user_id", alertPref.user_id)
             .eq("auction_id", auction.id)
-            .eq("alert_minutes", pref.alert_minutes)
+            .eq("alert_minutes", alertPref.alert_minutes)
             .maybeSingle();
 
           if (existingNotification) {
-            console.log(`Notification already sent for auction ${auction.id} to user ${pref.user_id}`);
+            console.log(`Notification already sent for auction ${auction.id} to user ${alertPref.user_id}`);
             continue;
           }
 
-          const timeRemainingText = formatTimeRemaining(minutesRemaining);
-          const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${timeRemainingText}!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
+          const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${alertPref.alert_minutes} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
 
-          console.log(`Sending alert for auction ${auction.id} to user ${pref.user_id}`);
+          console.log(`Sending alert for auction ${auction.id} to user ${alertPref.user_id}`);
 
           // Send Telegram notification
-          if (pref.enable_telegram && pref.telegram_token && pref.telegram_chat_id) {
-            await sendTelegramMessage(
-              pref.telegram_token,
-              pref.telegram_chat_id,
-              message
-            );
+          if (alertPref.enable_telegram && alertPref.telegram_token && alertPref.telegram_chat_id) {
+            try {
+              await sendTelegramMessage(
+                alertPref.telegram_token,
+                alertPref.telegram_chat_id,
+                message
+              );
+              console.log('Telegram notification sent successfully');
+            } catch (error) {
+              console.error('Failed to send Telegram notification:', error);
+            }
           }
 
           // Send email notification
-          if (pref.enable_email) {
-            const { data: userData } = await supabase.auth.admin.getUserById(pref.user_id);
+          if (alertPref.enable_email) {
+            const { data: userData } = await supabase.auth.admin.getUserById(alertPref.user_id);
             if (userData?.user?.email) {
-              await sendEmail(
-                userData.user.email,
-                "Auction Ending Soon!",
-                message.replace("\n", "<br>")
-              );
+              try {
+                await sendEmail(
+                  userData.user.email,
+                  "Auction Ending Soon!",
+                  message.replace("\n", "<br>")
+                );
+                console.log('Email notification sent successfully');
+              } catch (error) {
+                console.error('Failed to send email notification:', error);
+              }
             }
           }
 
@@ -166,9 +131,9 @@ const handler = async (req: Request): Promise<Response> => {
           await supabase
             .from("sent_notifications")
             .insert({
-              user_id: pref.user_id,
+              user_id: alertPref.user_id,
               auction_id: auction.id,
-              alert_minutes: pref.alert_minutes,
+              alert_minutes: alertPref.alert_minutes,
             });
         }
       }

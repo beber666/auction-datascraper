@@ -7,12 +7,40 @@ export const useAuctionMutations = (language: string, currency: string) => {
   const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
+  const parseTimeRemaining = (timeStr: string): Date | null => {
+    const str = timeStr.toLowerCase();
+    let totalMinutes = 0;
+    
+    // Match patterns for days
+    const dayMatches = str.match(/(\d+)\s*(day|jour|día|tag)/);
+    if (dayMatches) {
+      totalMinutes += parseInt(dayMatches[1]) * 24 * 60;
+    }
+
+    // Match patterns for hours
+    const hourMatches = str.match(/(\d+)\s*(hour|heure|hora|stunde)/);
+    if (hourMatches) {
+      totalMinutes += parseInt(hourMatches[1]) * 60;
+    }
+
+    // Match patterns for minutes
+    const minuteMatches = str.match(/(\d+)\s*(min|minute|minuto)/);
+    if (minuteMatches) {
+      totalMinutes += parseInt(minuteMatches[1]);
+    }
+
+    if (totalMinutes === 0) return null;
+
+    const endTime = new Date();
+    endTime.setMinutes(endTime.getMinutes() + totalMinutes);
+    return endTime;
+  };
+
   const handleSubmit = async (url: string) => {
     setIsLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
-    // Get user's language preference from profile
     const { data: profile } = await supabase
       .from('profiles')
       .select('preferred_language')
@@ -22,19 +50,6 @@ export const useAuctionMutations = (language: string, currency: string) => {
     const userLanguage = profile?.preferred_language || language || 'en';
     console.log('User language preference:', userLanguage);
 
-    const tempItem: AuctionItem = {
-      id: Math.random().toString(36).substr(2, 9),
-      url,
-      productName: "Loading...",
-      currentPrice: "...",
-      priceInJPY: 0,
-      numberOfBids: "...",
-      timeRemaining: "...",
-      lastUpdated: new Date(),
-      isLoading: true,
-      user_id: session.user.id
-    };
-
     try {
       // First, scrape the initial data
       const scrapedItem = await ScraperService.scrapeZenmarket(url);
@@ -42,6 +57,10 @@ export const useAuctionMutations = (language: string, currency: string) => {
         productName: scrapedItem.productName,
         language: userLanguage
       });
+
+      // Parse end time from time remaining
+      const endTime = parseTimeRemaining(scrapedItem.timeRemaining);
+      console.log('Calculated end time:', endTime);
 
       // Translate the product name
       let translatedName = scrapedItem.productName;
@@ -62,25 +81,19 @@ export const useAuctionMutations = (language: string, currency: string) => {
         currency
       );
 
-      // Prepare the item with translated name and converted price
-      const item = {
-        ...scrapedItem,
-        productName: translatedName,
-        currentPrice: convertedPrice
-      };
-
       const { data: savedItem, error } = await supabase
         .from("auctions")
         .insert([{
-          url: item.url,
-          product_name: item.productName,
-          current_price: item.currentPrice,
-          price_in_jpy: item.priceInJPY,
-          number_of_bids: item.numberOfBids,
-          time_remaining: item.timeRemaining,
-          last_updated: item.lastUpdated.toISOString(),
+          url: scrapedItem.url,
+          product_name: translatedName,
+          current_price: convertedPrice,
+          price_in_jpy: scrapedItem.priceInJPY,
+          number_of_bids: scrapedItem.numberOfBids,
+          time_remaining: scrapedItem.timeRemaining,
+          last_updated: new Date().toISOString(),
           user_id: session.user.id,
-          image_url: item.imageUrl
+          image_url: scrapedItem.imageUrl,
+          end_time: endTime?.toISOString()
         }])
         .select()
         .single();

@@ -72,6 +72,7 @@ export type Database = {
         Row: {
           created_at: string
           current_price: string | null
+          end_time: string | null
           id: string
           image_url: string | null
           last_updated: string | null
@@ -85,6 +86,7 @@ export type Database = {
         Insert: {
           created_at?: string
           current_price?: string | null
+          end_time?: string | null
           id?: string
           image_url?: string | null
           last_updated?: string | null
@@ -98,6 +100,7 @@ export type Database = {
         Update: {
           created_at?: string
           current_price?: string | null
+          end_time?: string | null
           id?: string
           image_url?: string | null
           last_updated?: string | null
