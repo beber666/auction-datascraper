@@ -25,6 +25,8 @@ serve(async (req) => {
       )
     }
 
+    console.log('Scraping URL:', url);
+
     // Fetch the page
     const response = await fetch(url)
     const html = await response.text()
@@ -44,6 +46,14 @@ serve(async (req) => {
     const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0'
     const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A'
     const imageUrl = doc.querySelector('#imgPreview')?.getAttribute('src') || null
+
+    console.log('Scraped data:', {
+      productName,
+      priceInJPY,
+      numberOfBids,
+      timeRemaining,
+      imageUrl
+    });
 
     const data = {
       url,
