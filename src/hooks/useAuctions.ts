@@ -15,7 +15,7 @@ export const useAuctions = (language: string, currency: string) => {
     const updatedItems = await Promise.all(
       items.map(async (item) => {
         try {
-          const scrapedItem = await submitAuction(item.url, true);
+          const scrapedItem = await submitAuction(item.url);
           return scrapedItem || item;
         } catch (error) {
           console.error('Error refreshing auction:', error);
