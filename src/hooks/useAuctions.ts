@@ -12,6 +12,10 @@ export const useAuctions = (language: string, currency: string) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
+    // First, load the latest state from the database
+    await loadUserAuctions();
+
+    // Then update each auction's data
     const updatedItems = await Promise.all(
       items.map(async (item) => {
         try {
@@ -26,7 +30,7 @@ export const useAuctions = (language: string, currency: string) => {
 
     setItems(updatedItems);
     console.log('Auction refresh completed');
-  }, [items, submitAuction, setItems]);
+  }, [items, submitAuction, setItems, loadUserAuctions]);
 
   const handleSubmit = async (url: string) => {
     try {
