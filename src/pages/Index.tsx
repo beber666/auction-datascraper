@@ -27,9 +27,11 @@ const Index = () => {
     isLoading,
     handleSubmit,
     handleDelete,
-    loadUserAuctions
+    loadUserAuctions,
+    refreshAuctions
   } = useAuctions(language, currency);
 
+  // Initial load of user data
   useEffect(() => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -42,6 +44,27 @@ const Index = () => {
     };
     checkUser();
   }, [navigate]);
+
+  // Handle auto-refresh
+  useEffect(() => {
+    if (!autoRefresh || !refreshInterval) return;
+
+    console.log('Setting up auto-refresh interval:', refreshInterval, 'minutes');
+    const intervalId = setInterval(() => {
+      console.log('Auto-refreshing auctions...');
+      refreshAuctions();
+    }, refreshInterval * 60 * 1000);
+
+    return () => clearInterval(intervalId);
+  }, [autoRefresh, refreshInterval, refreshAuctions]);
+
+  // Initial refresh of time remaining
+  useEffect(() => {
+    if (items.length > 0) {
+      console.log('Refreshing auctions on initial load');
+      refreshAuctions();
+    }
+  }, [items.length]);
 
   return (
     <div className="container mx-auto py-8 px-4">

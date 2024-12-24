@@ -13,8 +13,9 @@ const corsHeaders = {
 };
 
 async function sendTelegramMessage(botToken: string, chatId: string, message: string) {
+  console.log('Sending Telegram message:', { chatId, message });
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-  await fetch(url, {
+  const response = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -25,6 +26,16 @@ async function sendTelegramMessage(botToken: string, chatId: string, message: st
       parse_mode: "HTML",
     }),
   });
+
+  if (!response.ok) {
+    const error = await response.text();
+    console.error('Telegram API error:', error);
+    throw new Error(`Telegram API error: ${error}`);
+  }
+
+  const result = await response.json();
+  console.log('Telegram API response:', result);
+  return result;
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
@@ -66,18 +77,25 @@ const handler = async (req: Request): Promise<Response> => {
       .gt('end_time', now.toISOString())
       .order('end_time', { ascending: true });
 
-    if (auctionsError) throw auctionsError;
+    if (auctionsError) {
+      console.error('Error fetching auctions:', auctionsError);
+      throw auctionsError;
+    }
 
     console.log(`Processing ${auctionsToNotify?.length || 0} upcoming auctions`);
 
     for (const auction of auctionsToNotify || []) {
       const endTime = new Date(auction.end_time);
-      const minutesUntilEnd = (endTime.getTime() - now.getTime()) / (1000 * 60);
+      const minutesUntilEnd = Math.floor((endTime.getTime() - now.getTime()) / (1000 * 60));
+
+      console.log(`Auction ${auction.id} ends in ${minutesUntilEnd} minutes`);
 
       // Process each alert preference
       for (const alertPref of auction.alert_preferences) {
         // Check if it's time to send the alert (within 1 minute of the alert time)
         if (Math.abs(minutesUntilEnd - alertPref.alert_minutes) <= 1) {
+          console.log(`Checking notification for auction ${auction.id} and user ${alertPref.user_id}`);
+          
           // Check if we've already sent this notification
           const { data: existingNotification } = await supabase
             .from("sent_notifications")
@@ -128,13 +146,17 @@ const handler = async (req: Request): Promise<Response> => {
           }
 
           // Record that we've sent this notification
-          await supabase
+          const { error: insertError } = await supabase
             .from("sent_notifications")
             .insert({
               user_id: alertPref.user_id,
               auction_id: auction.id,
               alert_minutes: alertPref.alert_minutes,
             });
+
+          if (insertError) {
+            console.error('Error recording sent notification:', insertError);
+          }
         }
       }
     }
