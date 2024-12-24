@@ -5,7 +5,7 @@ import { supabase } from "@/integrations/supabase/client";
 
 export const useAuctions = (language: string, currency: string) => {
   const { items, setItems, loadUserAuctions } = useAuctionQueries();
-  const { isLoading, handleSubmit: submitAuction, handleDelete: deleteAuction } = useAuctionMutations(language, currency);
+  const { isLoading, handleSubmit: submitAuction, handleDelete: deleteAuction, handleUpdate } = useAuctionMutations(language, currency);
   const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const refreshAuctions = useCallback(async () => {
@@ -20,8 +20,9 @@ export const useAuctions = (language: string, currency: string) => {
     const updatedItems = await Promise.all(
       items.map(async (item) => {
         try {
-          const scrapedItem = await submitAuction(item.url);
-          return scrapedItem || item;
+          // Use handleUpdate instead of submitAuction for existing auctions
+          const updatedItem = await handleUpdate(item);
+          return updatedItem || item;
         } catch (error) {
           console.error('Error refreshing auction:', error);
           return item;
@@ -31,7 +32,7 @@ export const useAuctions = (language: string, currency: string) => {
 
     setItems(updatedItems);
     console.log('Auction refresh completed');
-  }, [items, submitAuction, setItems, loadUserAuctions]);
+  }, [items, handleUpdate, setItems, loadUserAuctions]);
 
   const handleSubmit = async (url: string) => {
     try {

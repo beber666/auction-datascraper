@@ -101,7 +101,7 @@ export const useAuctionMutations = (language: string, currency: string) => {
       if (error) throw error;
 
       if (savedItem) {
-        const mappedItem: AuctionItem = {
+        return {
           id: savedItem.id,
           url: savedItem.url,
           productName: savedItem.product_name,
@@ -114,8 +114,6 @@ export const useAuctionMutations = (language: string, currency: string) => {
           created_at: savedItem.created_at,
           imageUrl: savedItem.image_url
         };
-
-        return mappedItem;
       }
     } catch (error) {
       console.error("Error adding auction:", error);
@@ -127,6 +125,58 @@ export const useAuctionMutations = (language: string, currency: string) => {
       throw error;
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleUpdate = async (item: AuctionItem) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+
+    try {
+      // Scrape fresh data
+      const scrapedItem = await ScraperService.scrapeZenmarket(item.url);
+      
+      // Parse end time from time remaining
+      const endTime = parseTimeRemaining(scrapedItem.timeRemaining);
+
+      // Convert the price to the selected currency
+      const convertedPrice = await ScraperService.convertPrice(
+        scrapedItem.priceInJPY, 
+        currency
+      );
+
+      // Update the auction in the database
+      const { data: updatedItem, error } = await supabase
+        .from("auctions")
+        .update({
+          current_price: convertedPrice,
+          price_in_jpy: scrapedItem.priceInJPY,
+          number_of_bids: scrapedItem.numberOfBids,
+          time_remaining: scrapedItem.timeRemaining,
+          last_updated: new Date().toISOString(),
+          end_time: endTime?.toISOString()
+        })
+        .eq('id', item.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+
+      if (updatedItem) {
+        return {
+          ...item,
+          currentPrice: updatedItem.current_price,
+          priceInJPY: updatedItem.price_in_jpy,
+          numberOfBids: updatedItem.number_of_bids,
+          timeRemaining: updatedItem.time_remaining,
+          lastUpdated: new Date(updatedItem.last_updated)
+        };
+      }
+
+      return item;
+    } catch (error) {
+      console.error("Error updating auction:", error);
+      return item;
     }
   };
 
@@ -164,5 +214,6 @@ export const useAuctionMutations = (language: string, currency: string) => {
     isLoading,
     handleSubmit,
     handleDelete,
+    handleUpdate,
   };
 };
