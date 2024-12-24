@@ -28,7 +28,8 @@ const Index = () => {
     handleSubmit,
     handleDelete,
     loadUserAuctions,
-    refreshAuctions
+    refreshAuctions,
+    refreshIntervalRef
   } = useAuctions(language, currency);
 
   // Initial load of user data
@@ -47,15 +48,28 @@ const Index = () => {
 
   // Handle auto-refresh
   useEffect(() => {
-    if (!autoRefresh || !refreshInterval) return;
+    // Clear any existing interval
+    if (refreshIntervalRef.current) {
+      clearInterval(refreshIntervalRef.current);
+      refreshIntervalRef.current = null;
+    }
 
-    console.log('Setting up auto-refresh interval:', refreshInterval, 'minutes');
-    const intervalId = setInterval(() => {
-      console.log('Auto-refreshing auctions...');
-      refreshAuctions();
-    }, refreshInterval * 60 * 1000);
+    // Set up new interval if auto-refresh is enabled
+    if (autoRefresh && refreshInterval > 0) {
+      console.log('Setting up auto-refresh interval:', refreshInterval, 'minutes');
+      refreshIntervalRef.current = setInterval(() => {
+        console.log('Auto-refreshing auctions...');
+        refreshAuctions();
+      }, refreshInterval * 60 * 1000);
+    }
 
-    return () => clearInterval(intervalId);
+    // Cleanup function
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
   }, [autoRefresh, refreshInterval, refreshAuctions]);
 
   // Initial refresh of time remaining

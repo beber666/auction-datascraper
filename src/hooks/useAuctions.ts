@@ -1,11 +1,12 @@
 import { useAuctionMutations } from "./useAuctionMutations";
 import { useAuctionQueries } from "./useAuctionQueries";
-import { useCallback } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 export const useAuctions = (language: string, currency: string) => {
   const { items, setItems, loadUserAuctions } = useAuctionQueries();
   const { isLoading, handleSubmit: submitAuction, handleDelete: deleteAuction } = useAuctionMutations(language, currency);
+  const refreshIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   const refreshAuctions = useCallback(async () => {
     console.log('Starting auction refresh...');
@@ -52,12 +53,23 @@ export const useAuctions = (language: string, currency: string) => {
     }
   };
 
+  // Cleanup function to clear the interval
+  useEffect(() => {
+    return () => {
+      if (refreshIntervalRef.current) {
+        clearInterval(refreshIntervalRef.current);
+        refreshIntervalRef.current = null;
+      }
+    };
+  }, []);
+
   return {
     items,
     isLoading,
     handleSubmit,
     handleDelete,
     loadUserAuctions,
-    refreshAuctions
+    refreshAuctions,
+    refreshIntervalRef
   };
 };
