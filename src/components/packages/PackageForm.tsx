@@ -7,14 +7,14 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { PackageFormFields } from "./PackageFormFields";
 import { packageFormSchema, type PackageFormValues } from "./package-form-schema";
-import { useUser } from "@supabase/auth-helpers-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 export function PackageForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const user = useUser();
+  const [userId, setUserId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
@@ -30,20 +30,42 @@ export function PackageForm() {
     },
   });
 
-  // Redirect to login if not authenticated
+  // Check authentication status on mount and when it changes
   useEffect(() => {
-    if (!user) {
-      navigate("/login", { replace: true });
-      toast({
-        title: "Authentication required",
-        description: "Please log in to create packages",
-        variant: "destructive",
-      });
-    }
-  }, [user, navigate, toast]);
+    const checkAuth = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log("Current session:", session);
+      
+      if (!session?.user) {
+        console.log("No session found, redirecting to login");
+        navigate("/login");
+        return;
+      }
+      
+      setUserId(session.user.id);
+      setIsLoading(false);
+    };
+
+    checkAuth();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!session) {
+        console.log("Auth state changed: no session, redirecting to login");
+        navigate("/login");
+        return;
+      }
+      setUserId(session.user.id);
+    });
+
+    return () => {
+      subscription.unsubscribe();
+    };
+  }, [navigate]);
 
   const onSubmit = async (values: PackageFormValues) => {
-    if (!user?.id) {
+    if (!userId) {
+      console.log("No user ID found when submitting");
       toast({
         title: "Error",
         description: "You must be logged in to create packages",
@@ -53,6 +75,7 @@ export function PackageForm() {
     }
 
     try {
+      console.log("Creating package for user:", userId);
       const { error } = await supabase.from("packages").insert({
         name: values.name,
         shipping_cost: values.shipping_cost,
@@ -62,10 +85,13 @@ export function PackageForm() {
         selling_price: values.selling_price,
         international_shipping: values.international_shipping,
         notes: values.notes,
-        user_id: user.id,
+        user_id: userId,
       });
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error creating package:", error);
+        throw error;
+      }
 
       toast({
         title: "Success",
@@ -83,8 +109,7 @@ export function PackageForm() {
     }
   };
 
-  // If not authenticated, show a loading state
-  if (!user) {
+  if (isLoading) {
     return (
       <Alert>
         <AlertDescription>
