@@ -7,12 +7,12 @@ import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import { PackageFormFields } from "./PackageFormFields";
 import { packageFormSchema, type PackageFormValues } from "./package-form-schema";
-import { useAuth } from "@supabase/auth-helpers-react";
+import { useUser } from "@supabase/auth-helpers-react";
 
 export function PackageForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const auth = useAuth();
+  const user = useUser();
   
   const form = useForm<PackageFormValues>({
     resolver: zodResolver(packageFormSchema),
@@ -30,16 +30,14 @@ export function PackageForm() {
 
   const onSubmit = async (values: PackageFormValues) => {
     try {
-      if (!auth?.user?.id) {
+      if (!user?.id) {
         throw new Error("User not authenticated");
       }
 
-      const { error } = await supabase.from("packages").insert([
-        {
-          ...values,
-          user_id: auth.user.id,
-        },
-      ]);
+      const { error } = await supabase.from("packages").insert({
+        ...values,
+        user_id: user.id,
+      });
 
       if (error) throw error;
 
