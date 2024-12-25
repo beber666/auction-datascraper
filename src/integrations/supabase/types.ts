@@ -117,41 +117,65 @@ export type Database = {
         Row: {
           created_at: string
           customs_fees: number
+          customs_percentage: number | null
           id: string
+          international_shipping: number | null
+          link: string | null
+          local_shipping_price: number | null
+          margin: number | null
           name: string
           notes: string | null
           other_costs: number
           purchase_price: number
           selling_price: number | null
           shipping_cost: number
+          total_price: number | null
           updated_at: string
           user_id: string
+          weight_kg: number | null
+          zen_id: string | null
         }
         Insert: {
           created_at?: string
           customs_fees?: number
+          customs_percentage?: number | null
           id?: string
+          international_shipping?: number | null
+          link?: string | null
+          local_shipping_price?: number | null
+          margin?: number | null
           name: string
           notes?: string | null
           other_costs?: number
           purchase_price?: number
           selling_price?: number | null
           shipping_cost?: number
+          total_price?: number | null
           updated_at?: string
           user_id: string
+          weight_kg?: number | null
+          zen_id?: string | null
         }
         Update: {
           created_at?: string
           customs_fees?: number
+          customs_percentage?: number | null
           id?: string
+          international_shipping?: number | null
+          link?: string | null
+          local_shipping_price?: number | null
+          margin?: number | null
           name?: string
           notes?: string | null
           other_costs?: number
           purchase_price?: number
           selling_price?: number | null
           shipping_cost?: number
+          total_price?: number | null
           updated_at?: string
           user_id?: string
+          weight_kg?: number | null
+          zen_id?: string | null
         }
         Relationships: []
       }
