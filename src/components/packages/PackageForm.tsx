@@ -35,7 +35,14 @@ export function PackageForm() {
       }
 
       const { error } = await supabase.from("packages").insert({
-        ...values,
+        name: values.name,
+        shipping_cost: values.shipping_cost,
+        customs_fees: values.customs_fees,
+        customs_percentage: values.customs_percentage,
+        other_costs: values.other_costs,
+        selling_price: values.selling_price,
+        international_shipping: values.international_shipping,
+        notes: values.notes,
         user_id: user.id,
       });
 
