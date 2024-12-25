@@ -13,45 +13,62 @@ const corsHeaders = {
 };
 
 async function sendTelegramMessage(botToken: string, chatId: string, message: string) {
-  console.log('Sending Telegram message:', { chatId, message });
-  const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text: message,
-      parse_mode: "HTML",
-    }),
-  });
+  console.log('Attempting to send Telegram message:', { chatId, message });
+  
+  try {
+    const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        chat_id: chatId,
+        text: message,
+        parse_mode: "HTML",
+      }),
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    console.error('Telegram API error:', error);
-    throw new Error(`Telegram API error: ${error}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Telegram API error response:', errorText);
+      throw new Error(`Telegram API error (${response.status}): ${errorText}`);
+    }
+
+    const result = await response.json();
+    console.log('Telegram message sent successfully:', result);
+    return result;
+  } catch (error) {
+    console.error('Error sending Telegram message:', error);
+    throw error;
   }
-
-  const result = await response.json();
-  console.log('Telegram API response:', result);
-  return result;
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
-  await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${RESEND_API_KEY}`,
-    },
-    body: JSON.stringify({
-      from: "Auction Alerts <onboarding@resend.dev>",
-      to: [to],
-      subject,
-      html,
-    }),
-  });
+  try {
+    const response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+      },
+      body: JSON.stringify({
+        from: "Auction Alerts <onboarding@resend.dev>",
+        to: [to],
+        subject,
+        html,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Failed to send email: ${response.statusText}`);
+    }
+
+    console.log('Email sent successfully');
+  } catch (error) {
+    console.error('Error sending email:', error);
+    throw error;
+  }
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -94,7 +111,7 @@ const handler = async (req: Request): Promise<Response> => {
       for (const alertPref of auction.alert_preferences) {
         // Check if it's time to send the alert (within 1 minute of the alert time)
         if (Math.abs(minutesUntilEnd - alertPref.alert_minutes) <= 1) {
-          console.log(`Checking notification for auction ${auction.id} and user ${alertPref.user_id}`);
+          console.log(`Processing notification for auction ${auction.id} and user ${alertPref.user_id}`);
           
           // Check if we've already sent this notification
           const { data: existingNotification } = await supabase
@@ -110,13 +127,12 @@ const handler = async (req: Request): Promise<Response> => {
             continue;
           }
 
-          const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${alertPref.alert_minutes} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
+          const message = `🔔 Auction Alert!\n\nProduct: ${auction.product_name}\nCurrent Price: ${auction.current_price}\nTime Remaining: ${minutesUntilEnd} minutes\n\nView Auction: ${auction.url}`;
 
-          console.log(`Sending alert for auction ${auction.id} to user ${alertPref.user_id}`);
-
-          // Send Telegram notification
+          // Send Telegram notification if enabled
           if (alertPref.enable_telegram && alertPref.telegram_token && alertPref.telegram_chat_id) {
             try {
+              console.log(`Attempting to send Telegram notification for auction ${auction.id}`);
               await sendTelegramMessage(
                 alertPref.telegram_token,
                 alertPref.telegram_chat_id,
@@ -125,22 +141,25 @@ const handler = async (req: Request): Promise<Response> => {
               console.log('Telegram notification sent successfully');
             } catch (error) {
               console.error('Failed to send Telegram notification:', error);
+              // Continue with other notifications even if Telegram fails
             }
           }
 
-          // Send email notification
+          // Send email notification if enabled
           if (alertPref.enable_email) {
             const { data: userData } = await supabase.auth.admin.getUserById(alertPref.user_id);
             if (userData?.user?.email) {
               try {
+                console.log(`Attempting to send email notification for auction ${auction.id}`);
                 await sendEmail(
                   userData.user.email,
                   "Auction Ending Soon!",
-                  message.replace("\n", "<br>")
+                  message.replace(/\n/g, "<br>")
                 );
                 console.log('Email notification sent successfully');
               } catch (error) {
                 console.error('Failed to send email notification:', error);
+                // Continue with other notifications even if email fails
               }
             }
           }
