@@ -113,23 +113,15 @@ export type Database = {
         }
         Relationships: []
       }
-      packages: {
+      package_items: {
         Row: {
           created_at: string
-          customs_fees: number
-          customs_percentage: number | null
           id: string
-          international_shipping: number | null
           link: string | null
           local_shipping_price: number | null
-          margin: number | null
           name: string
-          notes: string | null
-          other_costs: number
-          purchase_price: number
-          selling_price: number | null
-          shipping_cost: number
-          total_price: number | null
+          package_id: string
+          purchase_price: number | null
           updated_at: string
           user_id: string
           weight_kg: number | null
@@ -137,20 +129,12 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          customs_fees?: number
-          customs_percentage?: number | null
           id?: string
-          international_shipping?: number | null
           link?: string | null
           local_shipping_price?: number | null
-          margin?: number | null
           name: string
-          notes?: string | null
-          other_costs?: number
-          purchase_price?: number
-          selling_price?: number | null
-          shipping_cost?: number
-          total_price?: number | null
+          package_id: string
+          purchase_price?: number | null
           updated_at?: string
           user_id: string
           weight_kg?: number | null
@@ -158,24 +142,78 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          customs_fees?: number
-          customs_percentage?: number | null
           id?: string
-          international_shipping?: number | null
           link?: string | null
           local_shipping_price?: number | null
-          margin?: number | null
           name?: string
-          notes?: string | null
-          other_costs?: number
-          purchase_price?: number
-          selling_price?: number | null
-          shipping_cost?: number
-          total_price?: number | null
+          package_id?: string
+          purchase_price?: number | null
           updated_at?: string
           user_id?: string
           weight_kg?: number | null
           zen_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packages: {
+        Row: {
+          created_at: string
+          customs_fees: number
+          customs_percentage: number | null
+          id: string
+          international_shipping: number | null
+          margin: number | null
+          name: string
+          notes: string | null
+          other_costs: number
+          selling_price: number | null
+          shipping_cost: number
+          total_items_cost: number | null
+          total_price: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          customs_fees?: number
+          customs_percentage?: number | null
+          id?: string
+          international_shipping?: number | null
+          margin?: number | null
+          name: string
+          notes?: string | null
+          other_costs?: number
+          selling_price?: number | null
+          shipping_cost?: number
+          total_items_cost?: number | null
+          total_price?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          customs_fees?: number
+          customs_percentage?: number | null
+          id?: string
+          international_shipping?: number | null
+          margin?: number | null
+          name?: string
+          notes?: string | null
+          other_costs?: number
+          selling_price?: number | null
+          shipping_cost?: number
+          total_items_cost?: number | null
+          total_price?: number | null
+          updated_at?: string
+          user_id?: string
         }
         Relationships: []
       }
