@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { PackageFormFields } from "./PackageFormFields";
 import { packageFormSchema, type PackageFormValues } from "./package-form-schema";
 import { useUser } from "@supabase/auth-helpers-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useEffect } from "react";
 
 export function PackageForm() {
   const navigate = useNavigate();
@@ -28,12 +30,29 @@ export function PackageForm() {
     },
   });
 
-  const onSubmit = async (values: PackageFormValues) => {
-    try {
-      if (!user?.id) {
-        throw new Error("User not authenticated");
-      }
+  // Redirect to login if not authenticated
+  useEffect(() => {
+    if (!user) {
+      navigate("/login", { replace: true });
+      toast({
+        title: "Authentication required",
+        description: "Please log in to create packages",
+        variant: "destructive",
+      });
+    }
+  }, [user, navigate, toast]);
 
+  const onSubmit = async (values: PackageFormValues) => {
+    if (!user?.id) {
+      toast({
+        title: "Error",
+        description: "You must be logged in to create packages",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
       const { error } = await supabase.from("packages").insert({
         name: values.name,
         shipping_cost: values.shipping_cost,
@@ -63,6 +82,17 @@ export function PackageForm() {
       });
     }
   };
+
+  // If not authenticated, show a loading state
+  if (!user) {
+    return (
+      <Alert>
+        <AlertDescription>
+          Checking authentication...
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
     <Form {...form}>
