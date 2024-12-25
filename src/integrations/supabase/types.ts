@@ -111,15 +111,7 @@ export type Database = {
           url?: string
           user_id?: string
         }
-        Relationships: [
-          {
-            foreignKeyName: "auctions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-        ]
+        Relationships: []
       }
       profiles: {
         Row: {

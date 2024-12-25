@@ -45,7 +45,7 @@ export const useAuctionMutations = (language: string, currency: string) => {
       .from('profiles')
       .select('preferred_language')
       .eq('id', session.user.id)
-      .single();
+      .maybeSingle();
 
     const userLanguage = profile?.preferred_language || language || 'en';
     console.log('User language preference:', userLanguage);
@@ -96,7 +96,7 @@ export const useAuctionMutations = (language: string, currency: string) => {
           end_time: endTime?.toISOString()
         }])
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
@@ -115,6 +115,7 @@ export const useAuctionMutations = (language: string, currency: string) => {
           imageUrl: savedItem.image_url
         };
       }
+      return null;
     } catch (error) {
       console.error("Error adding auction:", error);
       toast({
@@ -158,7 +159,7 @@ export const useAuctionMutations = (language: string, currency: string) => {
         })
         .eq('id', item.id)
         .select()
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
