@@ -1,1 +1,10 @@
 project_id = "yssapojsghmotbifhybq"
+
+[functions.scrape-zenmarket]
+verify_jwt = false
+
+[functions.translate]
+verify_jwt = false
+
+[functions.convert-currency]
+verify_jwt = false
