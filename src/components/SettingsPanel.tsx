@@ -30,12 +30,6 @@ export const SettingsPanel = ({
   const handleLanguageChange = async (newLanguage: string) => {
     try {
       await onLanguageChange(newLanguage);
-      toast({
-        title: "Language Updated",
-        description: "The page will refresh to apply the changes.",
-      });
-      // Force refresh all auctions to retranslate names
-      setTimeout(() => window.location.reload(), 1000);
     } catch (error) {
       console.error("Error updating language:", error);
       toast({

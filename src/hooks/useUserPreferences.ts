@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -8,6 +8,11 @@ export const useUserPreferences = () => {
   const [currency, setCurrency] = useState("EUR");
   const [language, setLanguage] = useState("en");
   const { toast } = useToast();
+
+  // Load user preferences on mount
+  useEffect(() => {
+    loadUserPreferences();
+  }, []);
 
   const loadUserPreferences = async () => {
     try {
@@ -29,6 +34,7 @@ export const useUserPreferences = () => {
       }
 
       if (profile) {
+        console.log("Loaded preferences:", profile);
         setCurrency(profile.preferred_currency || "EUR");
         setLanguage(profile.preferred_language || "en");
         setAutoRefresh(profile.auto_refresh || false);
@@ -110,16 +116,27 @@ export const useUserPreferences = () => {
 
   const handleLanguageChange = async (newLanguage: string) => {
     try {
+      // First update local state
       setLanguage(newLanguage);
+      
+      // Then update in database
       await updateProfile({ preferred_language: newLanguage });
       
+      // Show success message
       toast({
         title: "Language Updated",
         description: "The page will refresh to apply the changes.",
       });
+
+      // Store the new language in localStorage for persistence across page reload
+      localStorage.setItem('preferred_language', newLanguage);
       
-      // Force refresh all auctions to retranslate names
-      setTimeout(() => window.location.reload(), 1500);
+      // Force refresh all auctions to retranslate names after a short delay
+      // to ensure the database update completes
+      setTimeout(() => {
+        console.log('Reloading page to apply language change:', newLanguage);
+        window.location.reload();
+      }, 2000);
     } catch (error) {
       console.error("Error updating language:", error);
       toast({
