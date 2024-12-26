@@ -9,7 +9,7 @@ interface UrlFormProps {
 }
 
 export const UrlForm = ({ onSubmit, isLoading }: UrlFormProps) => {
-  const [url, setUrl] = useState("https://zenmarket.jp/fr/auction.aspx?itemCode=e1114877654");
+  const [url, setUrl] = useState("");
   const { toast } = useToast();
 
   const handleSubmit = async (e: React.FormEvent) => {
