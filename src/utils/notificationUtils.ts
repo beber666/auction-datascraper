@@ -8,6 +8,10 @@ export interface NotificationPayload {
 
 export const sendNotification = async (payload: NotificationPayload) => {
   try {
+    if (!payload.auction_id || !payload.user_id || payload.alert_minutes === undefined) {
+      throw new Error('Missing required notification fields');
+    }
+
     console.log('Sending notification with payload:', payload);
     
     const { error } = await supabase.functions.invoke('send-alerts', {

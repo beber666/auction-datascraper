@@ -62,13 +62,16 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     const payload = await req.json();
-    console.log("Processing notification for:", payload);
+    console.log("Received payload:", payload);
 
     // Validate required fields
     const { auction_id, user_id, alert_minutes } = payload;
     if (!auction_id || !user_id || alert_minutes === undefined) {
+      console.error("Missing required fields in payload:", payload);
       throw new Error("Missing required fields: auction_id, user_id, or alert_minutes");
     }
+
+    console.log("Processing notification for:", { auction_id, user_id, alert_minutes });
 
     // Get auction details
     const { data: auction, error: auctionError } = await supabase
