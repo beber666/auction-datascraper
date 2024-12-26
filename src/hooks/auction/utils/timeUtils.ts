@@ -1,28 +1,26 @@
-export const parseTimeRemaining = (timeStr: string): Date | null => {
-  const str = timeStr.toLowerCase();
-  let totalMinutes = 0;
+export const parseTimeRemaining = (timeString: string): Date | null => {
+  const now = new Date();
   
-  // Match patterns for days
-  const dayMatches = str.match(/(\d+)\s*(day|jour|día|tag)/);
-  if (dayMatches) {
-    totalMinutes += parseInt(dayMatches[1]) * 24 * 60;
+  // Match numbers followed by time units
+  const dayMatch = timeString.match(/(\d+)\s*(day|jour|día|tag)/i);
+  const hourMatch = timeString.match(/(\d+)\s*(hour|heure|hora|stunde)/i);
+  const minuteMatch = timeString.match(/(\d+)\s*(min|minute|minuto)/i);
+
+  if (!dayMatch && !hourMatch && !minuteMatch) {
+    return null;
   }
 
-  // Match patterns for hours
-  const hourMatches = str.match(/(\d+)\s*(hour|heure|hora|stunde)/);
-  if (hourMatches) {
-    totalMinutes += parseInt(hourMatches[1]) * 60;
+  const endTime = new Date(now);
+
+  if (dayMatch) {
+    endTime.setDate(endTime.getDate() + parseInt(dayMatch[1]));
+  }
+  if (hourMatch) {
+    endTime.setHours(endTime.getHours() + parseInt(hourMatch[1]));
+  }
+  if (minuteMatch) {
+    endTime.setMinutes(endTime.getMinutes() + parseInt(minuteMatch[1]));
   }
 
-  // Match patterns for minutes
-  const minuteMatches = str.match(/(\d+)\s*(min|minute|minuto)/);
-  if (minuteMatches) {
-    totalMinutes += parseInt(minuteMatches[1]);
-  }
-
-  if (totalMinutes === 0) return null;
-
-  const endTime = new Date();
-  endTime.setMinutes(endTime.getMinutes() + totalMinutes);
   return endTime;
 };

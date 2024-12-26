@@ -113,60 +113,6 @@ export type Database = {
         }
         Relationships: []
       }
-      packages: {
-        Row: {
-          created_at: string
-          customs_fees: number
-          customs_percentage: number | null
-          id: string
-          international_shipping: number | null
-          margin: number | null
-          name: string
-          notes: string | null
-          other_costs: number
-          selling_price: number | null
-          shipping_cost: number
-          total_items_cost: number | null
-          total_price: number | null
-          updated_at: string
-          user_id: string
-        }
-        Insert: {
-          created_at?: string
-          customs_fees?: number
-          customs_percentage?: number | null
-          id?: string
-          international_shipping?: number | null
-          margin?: number | null
-          name: string
-          notes?: string | null
-          other_costs?: number
-          selling_price?: number | null
-          shipping_cost?: number
-          total_items_cost?: number | null
-          total_price?: number | null
-          updated_at?: string
-          user_id: string
-        }
-        Update: {
-          created_at?: string
-          customs_fees?: number
-          customs_percentage?: number | null
-          id?: string
-          international_shipping?: number | null
-          margin?: number | null
-          name?: string
-          notes?: string | null
-          other_costs?: number
-          selling_price?: number | null
-          shipping_cost?: number
-          total_items_cost?: number | null
-          total_price?: number | null
-          updated_at?: string
-          user_id?: string
-        }
-        Relationships: []
-      }
       profiles: {
         Row: {
           auto_refresh: boolean | null
