@@ -1,4 +1,4 @@
-import { Home, User, Wrench, Package } from "lucide-react";
+import { Home, User, Wrench } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -16,11 +16,6 @@ const items = [
     title: "Auction Tracker",
     url: "/",
     icon: Home,
-  },
-  {
-    title: "Package Manager",
-    url: "/packages",
-    icon: Package,
   },
   {
     title: "My Account",
