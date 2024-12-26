@@ -37,14 +37,18 @@ export const useAuctionSubmit = (language: string, currency: string) => {
       // Translate the product name
       let translatedName = scrapedItem.productName;
       if (userLanguage !== 'ja') {
-        translatedName = await ScraperService.translateText(
-          scrapedItem.productName,
-          userLanguage
-        );
-        console.log('Translation result:', {
-          original: scrapedItem.productName,
-          translated: translatedName
+        const { data: translationData } = await supabase.functions.invoke('translate', {
+          body: {
+            text: scrapedItem.productName,
+            targetLanguage: userLanguage
+          }
         });
+
+        if (translationData?.translateUrl) {
+          // Open translation in new tab
+          window.open(translationData.translateUrl, '_blank');
+          translatedName = scrapedItem.productName; // Keep original name
+        }
       }
 
       // Convert the price to the selected currency

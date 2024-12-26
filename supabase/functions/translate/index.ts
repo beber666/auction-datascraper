@@ -36,33 +36,15 @@ serve(async (req) => {
       )
     }
 
-    // Google Translate API endpoint
-    const url = `https://translation.googleapis.com/language/translate/v2?key=${Deno.env.get('GOOGLE_TRANSLATE_API_KEY')}`
-    
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        q: text,
-        source: 'ja',
-        target: targetLanguage,
-        format: 'text'
-      })
-    })
-
-    const data = await response.json()
-    console.log('Translation response:', data)
-
-    if (!response.ok) {
-      throw new Error(data.error?.message || 'Translation failed')
-    }
-
-    const translatedText = data.data.translations[0].translatedText
+    // Generate Google Translate URL
+    const encodedText = encodeURIComponent(text)
+    const translateUrl = `https://translate.google.com/?sl=ja&tl=${targetLanguage}&text=${encodedText}&op=translate`
 
     return new Response(
-      JSON.stringify({ translatedText }),
+      JSON.stringify({ 
+        translatedText: text, // Return original text since we can't get translation from URL
+        translateUrl // Return URL so frontend can open it if needed
+      }),
       {
         headers: {
           ...corsHeaders,
