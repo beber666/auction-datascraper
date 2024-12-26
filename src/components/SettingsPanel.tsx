@@ -24,6 +24,12 @@ export const SettingsPanel = ({
   onCurrencyChange,
   onLanguageChange,
 }: SettingsPanelProps) => {
+  const handleLanguageChange = async (newLanguage: string) => {
+    onLanguageChange(newLanguage);
+    // Force refresh all auctions to retranslate names
+    window.location.reload();
+  };
+
   return (
     <div className="flex flex-col space-y-4 mb-8 p-4 border rounded-lg bg-white shadow-sm">
       <div className="flex items-center justify-between">
@@ -52,7 +58,7 @@ export const SettingsPanel = ({
         </div>
         
         <div className="flex items-center space-x-4">
-          <Select value={language} onValueChange={onLanguageChange}>
+          <Select value={language} onValueChange={handleLanguageChange}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Language" />
             </SelectTrigger>
