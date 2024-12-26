@@ -34,13 +34,35 @@ export const useAuctionSubmit = (language: string, currency: string) => {
       const endTime = parseTimeRemaining(scrapedItem.timeRemaining);
       console.log('Calculated end time:', endTime);
 
-      // Generate Google Translate URL
+      // Translate the product name using Google Translate API
       let translatedName = scrapedItem.productName;
       if (userLanguage !== 'ja') {
-        const encodedText = encodeURIComponent(scrapedItem.productName);
-        const translateUrl = `https://translate.google.com/?sl=ja&tl=${userLanguage}&text=${encodedText}&op=translate`;
-        console.log('Opening translation URL:', translateUrl);
-        window.open(translateUrl, '_blank');
+        try {
+          const { data: translationData, error: translationError } = await supabase.functions.invoke('translate-text', {
+            body: {
+              text: scrapedItem.productName,
+              targetLanguage: userLanguage
+            }
+          });
+
+          if (translationError) throw translationError;
+          
+          if (translationData?.translatedText) {
+            translatedName = translationData.translatedText;
+          }
+
+          // Also open Google Translate in a new tab for reference
+          const encodedText = encodeURIComponent(scrapedItem.productName);
+          const translateUrl = `https://translate.google.com/?sl=ja&tl=${userLanguage}&text=${encodedText}&op=translate`;
+          window.open(translateUrl, '_blank');
+        } catch (translationError) {
+          console.error('Translation error:', translationError);
+          toast({
+            title: "Translation Warning",
+            description: "Could not automatically translate the title. Please use the opened Google Translate tab.",
+            variant: "destructive",
+          });
+        }
       }
 
       // Convert the price to the selected currency
