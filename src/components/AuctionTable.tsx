@@ -12,6 +12,7 @@ import { Button } from "./ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { sendNotification } from "@/utils/notificationUtils";
 
 interface AuctionTableProps {
   items: AuctionItem[];
@@ -51,6 +52,22 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
       return;
     }
 
+    // Get user's alert preferences
+    const { data: alertPref } = await supabase
+      .from('alert_preferences')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .maybeSingle();
+
+    if (!alertPref) {
+      toast({
+        title: "Error",
+        description: "Alert preferences not found",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (alertedAuctions.includes(auctionId)) {
       // Remove alert
       const { error } = await supabase
@@ -75,27 +92,39 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
       });
     } else {
       // Add alert
-      const { error } = await supabase
-        .from('auction_alerts')
-        .insert({
+      try {
+        // First, create the auction alert
+        const { error: insertError } = await supabase
+          .from('auction_alerts')
+          .insert({
+            auction_id: auctionId,
+            user_id: session.user.id,
+          });
+
+        if (insertError) {
+          throw insertError;
+        }
+
+        // Then, send the initial notification
+        await sendNotification({
           auction_id: auctionId,
           user_id: session.user.id,
+          alert_minutes: alertPref.alert_minutes
         });
 
-      if (error) {
+        setAlertedAuctions(prev => [...prev, auctionId]);
+        toast({
+          title: "Success",
+          description: "Alert set successfully",
+        });
+      } catch (error) {
+        console.error('Error setting alert:', error);
         toast({
           title: "Error",
           description: "Failed to set alert",
           variant: "destructive",
         });
-        return;
       }
-
-      setAlertedAuctions(prev => [...prev, auctionId]);
-      toast({
-        title: "Success",
-        description: "Alert set successfully",
-      });
     }
   };
 
