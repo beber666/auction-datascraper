@@ -8,8 +8,14 @@ export interface NotificationPayload {
 
 export const sendNotification = async (payload: NotificationPayload) => {
   try {
+    console.log('Sending notification with payload:', payload);
+    
     const { error } = await supabase.functions.invoke('send-alerts', {
-      body: payload
+      body: {
+        auction_id: payload.auction_id,
+        user_id: payload.user_id,
+        alert_minutes: payload.alert_minutes
+      }
     });
 
     if (error) {

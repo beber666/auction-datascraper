@@ -61,18 +61,25 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    const { auction_id, user_id, alert_minutes } = await req.json();
-    console.log("Processing notification for:", { auction_id, user_id, alert_minutes });
+    const payload = await req.json();
+    console.log("Processing notification for:", payload);
+
+    // Validate required fields
+    const { auction_id, user_id, alert_minutes } = payload;
+    if (!auction_id || !user_id || alert_minutes === undefined) {
+      throw new Error("Missing required fields: auction_id, user_id, or alert_minutes");
+    }
 
     // Get auction details
     const { data: auction, error: auctionError } = await supabase
       .from("auctions")
       .select("*")
       .eq("id", auction_id)
-      .single();
+      .maybeSingle();
 
-    if (auctionError) {
-      throw auctionError;
+    if (auctionError || !auction) {
+      console.error("Error fetching auction:", auctionError);
+      throw new Error("Auction not found");
     }
 
     // Get user's alert preferences
@@ -80,10 +87,11 @@ const handler = async (req: Request): Promise<Response> => {
       .from("alert_preferences")
       .select("*")
       .eq("user_id", user_id)
-      .single();
+      .maybeSingle();
 
-    if (prefError) {
-      throw prefError;
+    if (prefError || !alertPref) {
+      console.error("Error fetching alert preferences:", prefError);
+      throw new Error("Alert preferences not found");
     }
 
     const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${alert_minutes} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
@@ -136,10 +144,15 @@ const handler = async (req: Request): Promise<Response> => {
     });
   } catch (error) {
     console.error("Error in send-alerts function:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ 
+        error: error.message,
+        details: "Failed to process notification"
+      }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      }
+    );
   }
 };
 
