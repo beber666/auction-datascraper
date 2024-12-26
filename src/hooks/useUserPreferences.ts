@@ -1,71 +1,129 @@
 import { useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 export const useUserPreferences = () => {
   const [autoRefresh, setAutoRefresh] = useState(false);
   const [refreshInterval, setRefreshInterval] = useState(1);
   const [currency, setCurrency] = useState("EUR");
   const [language, setLanguage] = useState("en");
+  const { toast } = useToast();
 
   const loadUserPreferences = async () => {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
 
-    const { data: profile } = await supabase
-      .from("profiles")
-      .select("preferred_currency, preferred_language, auto_refresh, refresh_interval")
-      .eq("id", session.user.id)
-      .single();
+      const { data: profile, error } = await supabase
+        .from("profiles")
+        .select("preferred_currency, preferred_language, auto_refresh, refresh_interval")
+        .eq("id", session.user.id)
+        .single();
 
-    if (profile) {
-      setCurrency(profile.preferred_currency);
-      setLanguage(profile.preferred_language);
-      setAutoRefresh(profile.auto_refresh || false);
-      setRefreshInterval(profile.refresh_interval || 1);
+      if (error) throw error;
+
+      if (profile) {
+        setCurrency(profile.preferred_currency || "EUR");
+        setLanguage(profile.preferred_language || "en");
+        setAutoRefresh(profile.auto_refresh || false);
+        setRefreshInterval(profile.refresh_interval || 1);
+      }
+    } catch (error) {
+      console.error("Error loading preferences:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load user preferences",
+        variant: "destructive",
+      });
     }
   };
 
   const handleAutoRefreshChange = async (enabled: boolean) => {
-    setAutoRefresh(enabled);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
+    try {
+      setAutoRefresh(enabled);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session found");
+
+      const { error } = await supabase
         .from("profiles")
         .update({ auto_refresh: enabled })
         .eq("id", session.user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating auto refresh:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update auto refresh setting",
+        variant: "destructive",
+      });
     }
   };
 
   const handleRefreshIntervalChange = async (minutes: number) => {
-    setRefreshInterval(minutes);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
+    try {
+      setRefreshInterval(minutes);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session found");
+
+      const { error } = await supabase
         .from("profiles")
         .update({ refresh_interval: minutes })
         .eq("id", session.user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating refresh interval:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update refresh interval",
+        variant: "destructive",
+      });
     }
   };
 
   const handleCurrencyChange = async (newCurrency: string) => {
-    setCurrency(newCurrency);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
+    try {
+      setCurrency(newCurrency);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session found");
+
+      const { error } = await supabase
         .from("profiles")
         .update({ preferred_currency: newCurrency })
         .eq("id", session.user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating currency:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update currency preference",
+        variant: "destructive",
+      });
     }
   };
 
   const handleLanguageChange = async (newLanguage: string) => {
-    setLanguage(newLanguage);
-    const { data: { session } } = await supabase.auth.getSession();
-    if (session) {
-      await supabase
+    try {
+      setLanguage(newLanguage);
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) throw new Error("No session found");
+
+      const { error } = await supabase
         .from("profiles")
         .update({ preferred_language: newLanguage })
         .eq("id", session.user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error("Error updating language:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update language preference",
+        variant: "destructive",
+      });
+      throw error; // Re-throw to handle in the UI
     }
   };
 

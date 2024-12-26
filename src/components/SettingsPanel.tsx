@@ -2,6 +2,7 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { useToast } from "@/hooks/use-toast";
 
 interface SettingsPanelProps {
   autoRefresh: boolean;
@@ -24,10 +25,25 @@ export const SettingsPanel = ({
   onCurrencyChange,
   onLanguageChange,
 }: SettingsPanelProps) => {
+  const { toast } = useToast();
+
   const handleLanguageChange = async (newLanguage: string) => {
-    onLanguageChange(newLanguage);
-    // Force refresh all auctions to retranslate names
-    window.location.reload();
+    try {
+      await onLanguageChange(newLanguage);
+      toast({
+        title: "Language Updated",
+        description: "The page will refresh to apply the changes.",
+      });
+      // Force refresh all auctions to retranslate names
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error) {
+      console.error("Error updating language:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update language preference",
+        variant: "destructive",
+      });
+    }
   };
 
   return (
