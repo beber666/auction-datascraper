@@ -12,6 +12,12 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+interface NotificationPayload {
+  auction_id: string;
+  user_id: string;
+  alert_minutes: number;
+}
+
 async function sendTelegramMessage(botToken: string, chatId: string, message: string) {
   console.log('Sending Telegram message:', { chatId, message });
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
@@ -39,6 +45,10 @@ async function sendTelegramMessage(botToken: string, chatId: string, message: st
 }
 
 async function sendEmail(to: string, subject: string, html: string) {
+  if (!RESEND_API_KEY) {
+    throw new Error('RESEND_API_KEY is not configured');
+  }
+
   await fetch("https://api.resend.com/emails", {
     method: "POST",
     headers: {
@@ -61,17 +71,19 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    console.log('Received request:', req.method);
     const payload = await req.json();
-    console.log("Received payload:", payload);
+    console.log('Received payload:', payload);
 
     // Validate required fields
-    const { auction_id, user_id, alert_minutes } = payload;
+    const { auction_id, user_id, alert_minutes } = payload as NotificationPayload;
+    
     if (!auction_id || !user_id || alert_minutes === undefined) {
-      console.error("Missing required fields in payload:", payload);
-      throw new Error("Missing required fields: auction_id, user_id, or alert_minutes");
+      console.error('Missing required fields in payload:', payload);
+      throw new Error('Missing required fields: auction_id, user_id, or alert_minutes');
     }
 
-    console.log("Processing notification for:", { auction_id, user_id, alert_minutes });
+    console.log('Processing notification for:', { auction_id, user_id, alert_minutes });
 
     // Get auction details
     const { data: auction, error: auctionError } = await supabase
