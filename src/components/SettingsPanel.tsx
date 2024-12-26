@@ -2,7 +2,6 @@ import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
 
 interface SettingsPanelProps {
   autoRefresh: boolean;
@@ -25,21 +24,6 @@ export const SettingsPanel = ({
   onCurrencyChange,
   onLanguageChange,
 }: SettingsPanelProps) => {
-  const { toast } = useToast();
-
-  const handleLanguageChange = async (newLanguage: string) => {
-    try {
-      await onLanguageChange(newLanguage);
-    } catch (error) {
-      console.error("Error updating language:", error);
-      toast({
-        title: "Error",
-        description: "Failed to update language preference",
-        variant: "destructive",
-      });
-    }
-  };
-
   return (
     <div className="flex flex-col space-y-4 mb-8 p-4 border rounded-lg bg-white shadow-sm">
       <div className="flex items-center justify-between">
@@ -68,7 +52,7 @@ export const SettingsPanel = ({
         </div>
         
         <div className="flex items-center space-x-4">
-          <Select value={language} onValueChange={handleLanguageChange}>
+          <Select value={language} onValueChange={onLanguageChange}>
             <SelectTrigger className="w-32">
               <SelectValue placeholder="Language" />
             </SelectTrigger>

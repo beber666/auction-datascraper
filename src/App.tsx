@@ -6,6 +6,8 @@ import Index from "@/pages/Index";
 import Account from "@/pages/Account";
 import Login from "@/pages/Login";
 import Tools from "@/pages/Tools";
+import Packages from "@/pages/Packages";
+import NewPackage from "@/pages/NewPackage";
 
 function App() {
   return (
@@ -20,6 +22,8 @@ function App() {
                 <Route path="/account" element={<Account />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/tools" element={<Tools />} />
+                <Route path="/packages" element={<Packages />} />
+                <Route path="/packages/new" element={<NewPackage />} />
               </Routes>
             </main>
           </div>
