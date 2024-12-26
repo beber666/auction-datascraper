@@ -61,104 +61,74 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Starting alert check...");
-    
-    const now = new Date();
-    
-    // Get auctions that are about to end and have alerts set up
-    const { data: auctionsToNotify, error: auctionsError } = await supabase
-      .from("auctions")
-      .select(`
-        *,
-        auction_alerts(user_id),
-        alert_preferences!inner(*)
-      `)
-      .not('end_time', 'is', null)
-      .gt('end_time', now.toISOString())
-      .order('end_time', { ascending: true });
+    const { auction_id, user_id, alert_minutes } = await req.json();
+    console.log("Processing notification for:", { auction_id, user_id, alert_minutes });
 
-    if (auctionsError) {
-      console.error('Error fetching auctions:', auctionsError);
-      throw auctionsError;
+    // Get auction details
+    const { data: auction, error: auctionError } = await supabase
+      .from("auctions")
+      .select("*")
+      .eq("id", auction_id)
+      .single();
+
+    if (auctionError) {
+      throw auctionError;
     }
 
-    console.log(`Processing ${auctionsToNotify?.length || 0} upcoming auctions`);
+    // Get user's alert preferences
+    const { data: alertPref, error: prefError } = await supabase
+      .from("alert_preferences")
+      .select("*")
+      .eq("user_id", user_id)
+      .single();
 
-    for (const auction of auctionsToNotify || []) {
-      const endTime = new Date(auction.end_time);
-      const minutesUntilEnd = Math.floor((endTime.getTime() - now.getTime()) / (1000 * 60));
+    if (prefError) {
+      throw prefError;
+    }
 
-      console.log(`Auction ${auction.id} ends in ${minutesUntilEnd} minutes`);
+    const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${alert_minutes} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
 
-      // Process each alert preference
-      for (const alertPref of auction.alert_preferences) {
-        // Check if it's time to send the alert (within 1 minute of the alert time)
-        if (Math.abs(minutesUntilEnd - alertPref.alert_minutes) <= 1) {
-          console.log(`Checking notification for auction ${auction.id} and user ${alertPref.user_id}`);
-          
-          // Check if we've already sent this notification
-          const { data: existingNotification } = await supabase
-            .from("sent_notifications")
-            .select("id")
-            .eq("user_id", alertPref.user_id)
-            .eq("auction_id", auction.id)
-            .eq("alert_minutes", alertPref.alert_minutes)
-            .maybeSingle();
+    // Send notifications based on user preferences
+    if (alertPref.enable_telegram && alertPref.telegram_token && alertPref.telegram_chat_id) {
+      try {
+        await sendTelegramMessage(
+          alertPref.telegram_token,
+          alertPref.telegram_chat_id,
+          message
+        );
+        console.log('Telegram notification sent successfully');
+      } catch (error) {
+        console.error('Failed to send Telegram notification:', error);
+      }
+    }
 
-          if (existingNotification) {
-            console.log(`Notification already sent for auction ${auction.id} to user ${alertPref.user_id}`);
-            continue;
-          }
-
-          const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${alertPref.alert_minutes} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
-
-          console.log(`Sending alert for auction ${auction.id} to user ${alertPref.user_id}`);
-
-          // Send Telegram notification
-          if (alertPref.enable_telegram && alertPref.telegram_token && alertPref.telegram_chat_id) {
-            try {
-              await sendTelegramMessage(
-                alertPref.telegram_token,
-                alertPref.telegram_chat_id,
-                message
-              );
-              console.log('Telegram notification sent successfully');
-            } catch (error) {
-              console.error('Failed to send Telegram notification:', error);
-            }
-          }
-
-          // Send email notification
-          if (alertPref.enable_email) {
-            const { data: userData } = await supabase.auth.admin.getUserById(alertPref.user_id);
-            if (userData?.user?.email) {
-              try {
-                await sendEmail(
-                  userData.user.email,
-                  "Auction Ending Soon!",
-                  message.replace("\n", "<br>")
-                );
-                console.log('Email notification sent successfully');
-              } catch (error) {
-                console.error('Failed to send email notification:', error);
-              }
-            }
-          }
-
-          // Record that we've sent this notification
-          const { error: insertError } = await supabase
-            .from("sent_notifications")
-            .insert({
-              user_id: alertPref.user_id,
-              auction_id: auction.id,
-              alert_minutes: alertPref.alert_minutes,
-            });
-
-          if (insertError) {
-            console.error('Error recording sent notification:', insertError);
-          }
+    if (alertPref.enable_email) {
+      const { data: userData } = await supabase.auth.admin.getUserById(user_id);
+      if (userData?.user?.email) {
+        try {
+          await sendEmail(
+            userData.user.email,
+            "Auction Ending Soon!",
+            message.replace("\n", "<br>")
+          );
+          console.log('Email notification sent successfully');
+        } catch (error) {
+          console.error('Failed to send email notification:', error);
         }
       }
+    }
+
+    // Record that we've sent this notification
+    const { error: insertError } = await supabase
+      .from("sent_notifications")
+      .insert({
+        user_id,
+        auction_id,
+        alert_minutes,
+      });
+
+    if (insertError) {
+      console.error('Error recording sent notification:', insertError);
     }
 
     return new Response(JSON.stringify({ success: true }), {
