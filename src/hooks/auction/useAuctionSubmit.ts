@@ -34,21 +34,13 @@ export const useAuctionSubmit = (language: string, currency: string) => {
       const endTime = parseTimeRemaining(scrapedItem.timeRemaining);
       console.log('Calculated end time:', endTime);
 
-      // Translate the product name
+      // Generate Google Translate URL
       let translatedName = scrapedItem.productName;
       if (userLanguage !== 'ja') {
-        const { data: translationData } = await supabase.functions.invoke('translate', {
-          body: {
-            text: scrapedItem.productName,
-            targetLanguage: userLanguage
-          }
-        });
-
-        if (translationData?.translateUrl) {
-          // Open translation in new tab
-          window.open(translationData.translateUrl, '_blank');
-          translatedName = scrapedItem.productName; // Keep original name
-        }
+        const encodedText = encodeURIComponent(scrapedItem.productName);
+        const translateUrl = `https://translate.google.com/?sl=ja&tl=${userLanguage}&text=${encodedText}&op=translate`;
+        console.log('Opening translation URL:', translateUrl);
+        window.open(translateUrl, '_blank');
       }
 
       // Convert the price to the selected currency
