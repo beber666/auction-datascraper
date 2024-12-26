@@ -12,7 +12,10 @@ export const useUserPreferences = () => {
   const loadUserPreferences = async () => {
     try {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
+      if (!session) {
+        console.error("No active session found");
+        return;
+      }
 
       const { data: profile, error } = await supabase
         .from("profiles")
@@ -20,7 +23,10 @@ export const useUserPreferences = () => {
         .eq("id", session.user.id)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error loading preferences:", error);
+        throw error;
+      }
 
       if (profile) {
         setCurrency(profile.preferred_currency || "EUR");
@@ -38,18 +44,32 @@ export const useUserPreferences = () => {
     }
   };
 
-  const handleAutoRefreshChange = async (enabled: boolean) => {
+  const updateProfile = async (updates: any) => {
     try {
-      setAutoRefresh(enabled);
       const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session found");
+      if (!session) {
+        throw new Error("No active session");
+      }
 
       const { error } = await supabase
         .from("profiles")
-        .update({ auto_refresh: enabled })
+        .update(updates)
         .eq("id", session.user.id);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating profile:", error);
+        throw error;
+      }
+    } catch (error) {
+      console.error("Error in updateProfile:", error);
+      throw error;
+    }
+  };
+
+  const handleAutoRefreshChange = async (enabled: boolean) => {
+    try {
+      setAutoRefresh(enabled);
+      await updateProfile({ auto_refresh: enabled });
     } catch (error) {
       console.error("Error updating auto refresh:", error);
       toast({
@@ -63,15 +83,7 @@ export const useUserPreferences = () => {
   const handleRefreshIntervalChange = async (minutes: number) => {
     try {
       setRefreshInterval(minutes);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session found");
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ refresh_interval: minutes })
-        .eq("id", session.user.id);
-
-      if (error) throw error;
+      await updateProfile({ refresh_interval: minutes });
     } catch (error) {
       console.error("Error updating refresh interval:", error);
       toast({
@@ -85,15 +97,7 @@ export const useUserPreferences = () => {
   const handleCurrencyChange = async (newCurrency: string) => {
     try {
       setCurrency(newCurrency);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session found");
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ preferred_currency: newCurrency })
-        .eq("id", session.user.id);
-
-      if (error) throw error;
+      await updateProfile({ preferred_currency: newCurrency });
     } catch (error) {
       console.error("Error updating currency:", error);
       toast({
@@ -107,15 +111,15 @@ export const useUserPreferences = () => {
   const handleLanguageChange = async (newLanguage: string) => {
     try {
       setLanguage(newLanguage);
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) throw new Error("No session found");
-
-      const { error } = await supabase
-        .from("profiles")
-        .update({ preferred_language: newLanguage })
-        .eq("id", session.user.id);
-
-      if (error) throw error;
+      await updateProfile({ preferred_language: newLanguage });
+      
+      toast({
+        title: "Language Updated",
+        description: "The page will refresh to apply the changes.",
+      });
+      
+      // Force refresh all auctions to retranslate names
+      setTimeout(() => window.location.reload(), 1500);
     } catch (error) {
       console.error("Error updating language:", error);
       toast({
@@ -123,7 +127,7 @@ export const useUserPreferences = () => {
         description: "Failed to update language preference",
         variant: "destructive",
       });
-      throw error; // Re-throw to handle in the UI
+      throw error;
     }
   };
 
