@@ -42,8 +42,8 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) {
       toast({
-        title: "Error",
-        description: "You must be logged in to set alerts",
+        title: "Erreur",
+        description: "Vous devez être connecté pour définir des alertes",
         variant: "destructive",
       });
       return;
@@ -58,8 +58,8 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
 
     if (!alertPref) {
       toast({
-        title: "Error",
-        description: "Alert preferences not found",
+        title: "Erreur",
+        description: "Préférences d'alerte non trouvées",
         variant: "destructive",
       });
       return;
@@ -75,8 +75,8 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
 
       if (error) {
         toast({
-          title: "Error",
-          description: "Failed to remove alert",
+          title: "Erreur",
+          description: "Impossible de supprimer l'alerte",
           variant: "destructive",
         });
         return;
@@ -84,8 +84,8 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
 
       setAlertedAuctions(prev => prev.filter(id => id !== auctionId));
       toast({
-        title: "Success",
-        description: "Alert removed successfully",
+        title: "Succès",
+        description: "Alerte supprimée avec succès",
       });
     } else {
       // Add alert
@@ -103,14 +103,14 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
 
         setAlertedAuctions(prev => [...prev, auctionId]);
         toast({
-          title: "Success",
-          description: "Alert set successfully",
+          title: "Succès",
+          description: "Alerte définie avec succès",
         });
       } catch (error) {
         console.error('Error setting alert:', error);
         toast({
-          title: "Error",
-          description: "Failed to set alert",
+          title: "Erreur",
+          description: "Impossible de définir l'alerte",
           variant: "destructive",
         });
       }
@@ -122,10 +122,10 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Product Name</TableHead>
-            <TableHead>Current Price</TableHead>
-            <TableHead className="text-center">Bids</TableHead>
-            <TableHead>Time Remaining</TableHead>
+            <TableHead>Nom du produit</TableHead>
+            <TableHead>Prix actuel</TableHead>
+            <TableHead className="text-center">Enchères</TableHead>
+            <TableHead>Temps restant</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
