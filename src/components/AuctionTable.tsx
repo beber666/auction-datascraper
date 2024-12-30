@@ -12,7 +12,6 @@ import { Button } from "./ui/button";
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { sendNotification } from "@/utils/notificationUtils";
 
 interface AuctionTableProps {
   items: AuctionItem[];
@@ -104,13 +103,6 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
         if (insertError) {
           throw insertError;
         }
-
-        // Then, send the initial notification
-        await sendNotification({
-          auction_id: auctionId,
-          user_id: session.user.id,
-          alert_minutes: alertPref.alert_minutes
-        });
 
         setAlertedAuctions(prev => [...prev, auctionId]);
         toast({
