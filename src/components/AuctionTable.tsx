@@ -88,7 +88,7 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
         description: "Alerte supprimée avec succès",
       });
     } else {
-      // Add alert
+      // Add alert without triggering immediate notification
       try {
         const { error: insertError } = await supabase
           .from('auction_alerts')
