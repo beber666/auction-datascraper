@@ -65,25 +65,33 @@ async function sendEmail(to: string, subject: string, html: string) {
 }
 
 const handler = async (req: Request): Promise<Response> => {
-  // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
   try {
-    console.log('Received request:', req.method);
     const payload = await req.json();
-    console.log('Received payload:', payload);
-
-    // Validate required fields
     const { auction_id, user_id, alert_minutes } = payload as NotificationPayload;
     
     if (!auction_id || !user_id || alert_minutes === undefined) {
-      console.error('Missing required fields in payload:', payload);
       throw new Error('Missing required fields: auction_id, user_id, or alert_minutes');
     }
 
-    console.log('Processing notification for:', { auction_id, user_id, alert_minutes });
+    // Check if we've already sent a notification for this auction and alert time
+    const { data: existingNotification } = await supabase
+      .from("sent_notifications")
+      .select("*")
+      .eq("auction_id", auction_id)
+      .eq("user_id", user_id)
+      .eq("alert_minutes", alert_minutes)
+      .maybeSingle();
+
+    if (existingNotification) {
+      return new Response(
+        JSON.stringify({ message: "Notification already sent" }), 
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
 
     // Get auction details
     const { data: auction, error: auctionError } = await supabase
@@ -93,7 +101,6 @@ const handler = async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (auctionError || !auction) {
-      console.error("Error fetching auction:", auctionError);
       throw new Error("Auction not found");
     }
 
@@ -105,11 +112,10 @@ const handler = async (req: Request): Promise<Response> => {
       .maybeSingle();
 
     if (prefError || !alertPref) {
-      console.error("Error fetching alert preferences:", prefError);
       throw new Error("Alert preferences not found");
     }
 
-    const message = `🔔 Auction Alert: "${auction.product_name}" is ending in ${alert_minutes} minutes!\nCurrent price: ${auction.current_price}\nCheck it out: ${auction.url}`;
+    const message = `🔔 Alerte Enchère: "${auction.product_name}" se termine dans ${alert_minutes} minutes!\nPrix actuel: ${auction.current_price}\nVoir l'enchère: ${auction.url}`;
 
     // Send notifications based on user preferences
     if (alertPref.enable_telegram && alertPref.telegram_token && alertPref.telegram_chat_id) {
@@ -119,7 +125,6 @@ const handler = async (req: Request): Promise<Response> => {
           alertPref.telegram_chat_id,
           message
         );
-        console.log('Telegram notification sent successfully');
       } catch (error) {
         console.error('Failed to send Telegram notification:', error);
       }
@@ -131,10 +136,9 @@ const handler = async (req: Request): Promise<Response> => {
         try {
           await sendEmail(
             userData.user.email,
-            "Auction Ending Soon!",
+            "Enchère se termine bientôt !",
             message.replace("\n", "<br>")
           );
-          console.log('Email notification sent successfully');
         } catch (error) {
           console.error('Failed to send email notification:', error);
         }
@@ -154,9 +158,10 @@ const handler = async (req: Request): Promise<Response> => {
       console.error('Error recording sent notification:', insertError);
     }
 
-    return new Response(JSON.stringify({ success: true }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return new Response(
+      JSON.stringify({ success: true }), 
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   } catch (error) {
     console.error("Error in send-alerts function:", error);
     return new Response(
