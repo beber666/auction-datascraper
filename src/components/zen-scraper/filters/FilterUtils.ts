@@ -14,9 +14,12 @@ export const parseTimeToHours = (timeStr: string): number => {
 };
 
 export const parsePriceValue = (priceStr: string): number => {
-  // Remove currency symbols and non-numeric characters except dots
-  const numericValue = priceStr.replace(/[^0-9.]/g, '');
-  return parseFloat(numericValue) || 0;
+  // Remove currency symbols and convert commas to empty string
+  const cleanedStr = priceStr
+    .replace(/[^0-9,\.]/g, '') // Remove everything except numbers, commas and dots
+    .replace(/,/g, '');        // Remove commas
+  
+  return parseFloat(cleanedStr) || 0;
 };
 
 export const filterByBids = (items: ScrapedItem[], showOnlyWithBids: boolean): ScrapedItem[] => {
