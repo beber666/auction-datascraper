@@ -13,6 +13,8 @@ import { ZenScraperService } from "@/services/zenScraper";
 import { parseTimeToHours } from "./filters/FilterUtils";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
+import { useAuctionTranslation } from "@/hooks/auction/useAuctionTranslation";
+import { useEffect, useState } from "react";
 
 interface ResultsTableProps {
   results: ScrapedItem[];
@@ -30,9 +32,37 @@ export const ResultsTable = ({
   onSort 
 }: ResultsTableProps) => {
   const { toast } = useToast();
+  const { translateAuctionName } = useAuctionTranslation();
+  const [translatedResults, setTranslatedResults] = useState<ScrapedItem[]>([]);
+
+  useEffect(() => {
+    const translateTitles = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) return;
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('preferred_language')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      const userLanguage = profile?.preferred_language || 'en';
+
+      const translatedItems = await Promise.all(
+        results.map(async (item) => {
+          const translatedTitle = await translateAuctionName(item.title, userLanguage);
+          return { ...item, title: translatedTitle };
+        })
+      );
+
+      setTranslatedResults(translatedItems);
+    };
+
+    translateTitles();
+  }, [results]);
 
   const handleExport = () => {
-    ZenScraperService.exportToExcel(results);
+    ZenScraperService.exportToExcel(translatedResults.length > 0 ? translatedResults : results);
   };
 
   const handleAddToTracker = async (item: ScrapedItem) => {
@@ -76,9 +106,9 @@ export const ResultsTable = ({
   };
 
   const getSortedResults = () => {
-    if (!sortColumn) return results;
+    if (!sortColumn) return translatedResults.length > 0 ? translatedResults : results;
 
-    return [...results].sort((a, b) => {
+    return [...(translatedResults.length > 0 ? translatedResults : results)].sort((a, b) => {
       if (sortColumn === 'timeRemaining') {
         const timeA = parseTimeToHours(a.timeRemaining);
         const timeB = parseTimeToHours(b.timeRemaining);
