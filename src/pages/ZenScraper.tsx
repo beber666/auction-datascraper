@@ -64,6 +64,7 @@ export default function ZenScraper() {
     }
 
     setIsLoading(true);
+    // Reset all states at the start of a new scraping session
     setResults([]);
     setFilteredResults([]);
     setHasMorePages(false);
@@ -75,15 +76,17 @@ export default function ZenScraper() {
       let currentPageUrl = url;
       let hasNext = true;
       let pageNum = 1;
+      let accumulatedResults: ScrapedItem[] = [];
 
       while (hasNext) {
         setCurrentPage(pageNum);
         
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
         
-        const newResults = [...results, ...items];
-        setResults(newResults);
-        setFilteredResults(newResults);
+        // Accumulate results
+        accumulatedResults = [...accumulatedResults, ...items];
+        setResults(accumulatedResults);
+        setFilteredResults(accumulatedResults);
         setHasMorePages(more);
         setTotalPages(pages);
         setScrapedPages(pageNum);
@@ -92,13 +95,14 @@ export default function ZenScraper() {
         if (hasNext) {
           pageNum++;
           currentPageUrl = `${url}&p=${pageNum}`;
+          // Add a small delay between requests to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
       toast({
         title: "Success",
-        description: `Scraped ${results.length} items from ${pageNum} pages`,
+        description: `Scraped ${accumulatedResults.length} items from ${pageNum} pages`,
       });
     } catch (error) {
       console.error('Scraping error:', error);
@@ -218,7 +222,7 @@ export default function ZenScraper() {
                     <TableCell className="font-medium">{item.title}</TableCell>
                     <TableCell>{item.currentPrice}</TableCell>
                     <TableCell>{item.buyoutPrice || 'N/A'}</TableCell>
-                    <TableCell>{item.bids}</TableCell>
+                    <TableCell>{item.bids || '0'}</TableCell>
                     <TableCell>{item.categories.join(', ')}</TableCell>
                     <TableCell>{item.timeRemaining}</TableCell>
                   </TableRow>
