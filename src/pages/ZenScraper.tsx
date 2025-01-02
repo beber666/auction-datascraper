@@ -53,14 +53,11 @@ export default function ZenScraper() {
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
         console.log(`Page ${pageNum}: Found ${items.length} items, hasMore: ${more}, total pages: ${pages}`);
         
-        // Filter out duplicates based on URL
-        const uniqueItems = items.filter(item => {
-          if (seenUrls.has(item.url)) {
-            return false;
-          }
-          seenUrls.add(item.url);
-          return true;
-        });
+        // Filter out duplicates based on URL but only if they're not already in our results
+        const uniqueItems = items.filter(item => !seenUrls.has(item.url));
+        
+        // Add the new URLs to our set after filtering
+        uniqueItems.forEach(item => seenUrls.add(item.url));
 
         // Update results by adding new items to existing ones
         setResults(prevResults => [...prevResults, ...uniqueItems]);
