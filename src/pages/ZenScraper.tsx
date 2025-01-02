@@ -30,25 +30,21 @@ export default function ZenScraper() {
     setScrapedPages(0);
 
     try {
-      // Ensure we're using the /en/ version of the URL
+      // Ensure we're using the /en/ version of the URL for the first page
       let scrapingUrl = url;
       if (!scrapingUrl.includes('/en/')) {
         scrapingUrl = scrapingUrl.replace('zenmarket.jp/', 'zenmarket.jp/en/');
       }
 
-      console.log('Starting scrape with URL:', scrapingUrl);
-      
       const { items, totalPages } = await ZenScraperService.scrapeCategory(scrapingUrl);
-      
-      console.log(`Found ${items.length} items on page 1 of ${totalPages}`);
       
       setResults(items);
       setFilteredResults(items);
-      setScrapedPages(1);
+      setScrapedPages(totalPages);
 
       toast({
-        title: "Page scraped successfully",
-        description: `Found ${items.length} items`,
+        title: "Scraping completed",
+        description: `Found ${items.length} items across ${totalPages} pages`,
       });
     } catch (error) {
       console.error('Scraping error:', error);
@@ -69,7 +65,7 @@ export default function ZenScraper() {
       <ScrapeForm 
         onScrapeStart={handleScrape}
         isLoading={isLoading}
-        currentPage={1}
+        currentPage={scrapedPages}
       />
 
       {results.length > 0 && (
