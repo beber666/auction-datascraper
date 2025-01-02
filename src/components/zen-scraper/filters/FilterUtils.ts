@@ -14,12 +14,16 @@ export const parseTimeToHours = (timeStr: string): number => {
 };
 
 export const parsePriceValue = (priceStr: string): number => {
-  // Remove currency symbols and convert commas to empty string
-  const cleanedStr = priceStr
-    .replace(/[^0-9,\.]/g, '') // Remove everything except numbers, commas and dots
-    .replace(/,/g, '');        // Remove commas
+  // Remove all currency symbols and spaces
+  const cleanedStr = priceStr.replace(/[€$¥£\s]/g, '');
   
-  return parseFloat(cleanedStr) || 0;
+  // If the string uses comma as decimal separator (e.g. €7,09)
+  if (cleanedStr.includes(',') && !cleanedStr.includes('.')) {
+    return parseFloat(cleanedStr.replace(',', '.')) || 0;
+  }
+  
+  // If the string uses comma as thousands separator (e.g. 1,234.56)
+  return parseFloat(cleanedStr.replace(/,/g, '')) || 0;
 };
 
 export const filterByBids = (items: ScrapedItem[], showOnlyWithBids: boolean): ScrapedItem[] => {
@@ -52,6 +56,7 @@ export const filterByPrice = (
 ): ScrapedItem[] => {
   return items.filter((item) => {
     const price = parsePriceValue(item.currentPrice);
+    console.log('Filtering price:', item.currentPrice, '→', price); // Debug log
     
     if (priceRange.min !== null && price < priceRange.min) {
       return false;
