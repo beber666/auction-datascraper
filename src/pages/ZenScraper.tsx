@@ -119,7 +119,7 @@ export default function ZenScraper() {
           <Alert className="mt-4">
             <InfoIcon className="h-4 w-4" />
             <AlertDescription>
-              Due to performance limitations, only {scrapedPages} {scrapedPages === 1 ? 'page was' : 'pages were'} scraped. The category has {totalPages} pages available.
+              Due to performance limitations, only {scrapedPages} {scrapedPages === 1 ? 'page was' : 'pages were'} scraped.
             </AlertDescription>
           </Alert>
         )}

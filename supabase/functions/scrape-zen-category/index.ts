@@ -41,6 +41,14 @@ serve(async (req) => {
       const html = await response.text()
       const $ = cheerio.load(html)
 
+      // Get total pages from the page counter
+      const pageCounterText = $('#paging_totalPagesCount').text()
+      const pagesMatch = pageCounterText.match(/Page \d+ of (\d+)/)
+      if (pagesMatch) {
+        totalPages = parseInt(pagesMatch[1])
+        console.log(`Total pages detected: ${totalPages}`)
+      }
+
       $('.col-md-7').each((_, element) => {
         const $el = $(element)
         const titleEl = $el.find('.translate a.auction-url')
@@ -80,16 +88,7 @@ serve(async (req) => {
       })
 
       // Check if there's a next page
-      hasNextPage = $('#paging_nextPage').length > 0
-      
-      // Calculate total pages based on pagination
-      const lastPageLink = $('.pagination li:last-child a').attr('href')
-      if (lastPageLink) {
-        const match = lastPageLink.match(/p=(\d+)/)
-        if (match) {
-          totalPages = parseInt(match[1])
-        }
-      }
+      hasNextPage = page < totalPages
 
       console.log(`Finished scraping page ${page}. Found ${items.length} items.`)
 
