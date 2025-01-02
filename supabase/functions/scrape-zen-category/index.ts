@@ -30,52 +30,75 @@ async function scrapePage(url: string): Promise<{
 
   // Scrape items from the current page
   $('.col-md-7').each((_, element) => {
-    const $el = $(element);
-    
-    // Get basic item info
-    const titleEl = $el.find('.translate a.auction-url');
-    const title = titleEl.text().trim();
-    const itemUrl = titleEl.attr('href');
-    
-    if (!title || !itemUrl) {
-      return; // Skip if missing essential data
+    try {
+      const $el = $(element);
+      
+      // Get basic item info with better error handling
+      const titleEl = $el.find('.translate a.auction-url');
+      const title = titleEl.text().trim();
+      const itemUrl = titleEl.attr('href');
+      
+      if (!title || !itemUrl) {
+        console.log('Skipping item: Missing title or URL');
+        return;
+      }
+
+      // Get bids count with improved parsing
+      const bidsEl = $el.find('.label.label-default.auction-label');
+      const bidsText = bidsEl.text().trim();
+      const bidsMatch = bidsText.match(/\d+/);
+      const bids = bidsMatch ? parseInt(bidsMatch[0]) : 0;
+
+      // Get time remaining with validation
+      const timeEl = $el.find('.glyphicon-time').parent();
+      const timeRemaining = timeEl.text().trim() || 'N/A';
+
+      // Get categories with better handling
+      const categoryContainer = $el.find('div:contains("Category:")');
+      const categories = categoryContainer
+        .find('a.auction-url')
+        .map((_, link) => $(link).text().trim())
+        .get()
+        .filter(cat => cat.length > 0); // Filter out empty categories
+
+      if (categories.length === 0) {
+        console.log('Warning: No categories found for item:', title);
+      }
+
+      // Get prices from the next column with improved error handling
+      const priceCol = $el.next('.col-md-3');
+      const currentPriceEl = priceCol.find('.auction-price .amount');
+      const buyoutPriceEl = priceCol.find('.auction-blitzprice .amount');
+
+      const currentPrice = currentPriceEl.length ? 
+        (currentPriceEl.attr('data-eur') || currentPriceEl.text().trim()) : 
+        'N/A';
+        
+      const buyoutPrice = buyoutPriceEl.length ? 
+        (buyoutPriceEl.attr('data-eur') || buyoutPriceEl.text().trim()) : 
+        null;
+
+      // Log successful item scrape
+      console.log('Successfully scraped item:', {
+        title,
+        bids,
+        categories: categories.length,
+        currentPrice
+      });
+
+      // Add the item to our results
+      items.push({
+        title,
+        url: 'https://zenmarket.jp/en/' + itemUrl,
+        bids,
+        timeRemaining,
+        categories: categories.length > 0 ? categories : ['Non catégorisé'],
+        currentPrice,
+        buyoutPrice
+      });
+    } catch (error) {
+      console.error('Error scraping individual item:', error);
     }
-
-    // Get bids count
-    const bidsEl = $el.find('.label.label-default.auction-label');
-    const bids = parseInt(bidsEl.text().replace('Bids: ', '')) || 0;
-
-    // Get time remaining
-    const timeEl = $el.find('.glyphicon-time').parent();
-    const timeRemaining = timeEl.text().trim();
-
-    // Get categories
-    const categoryContainer = $el.find('div:contains("Category:")');
-    const categories = categoryContainer
-      .find('a.auction-url')
-      .map((_, link) => $(link).text().trim())
-      .get();
-
-    // Get prices from the next column
-    const priceCol = $el.next('.col-md-3');
-    const currentPriceEl = priceCol.find('.auction-price .amount');
-    const buyoutPriceEl = priceCol.find('.auction-blitzprice .amount');
-
-    const currentPrice = currentPriceEl.attr('data-eur') || currentPriceEl.text().trim();
-    const buyoutPrice = buyoutPriceEl.length ? 
-      (buyoutPriceEl.attr('data-eur') || buyoutPriceEl.text().trim()) : 
-      null;
-
-    // Add the item to our results
-    items.push({
-      title,
-      url: 'https://zenmarket.jp/en/' + itemUrl,
-      bids,
-      timeRemaining,
-      categories,
-      currentPrice,
-      buyoutPrice
-    });
   });
 
   // Check for next page link
@@ -97,6 +120,7 @@ async function scrapePage(url: string): Promise<{
 }
 
 serve(async (req) => {
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -109,6 +133,14 @@ serve(async (req) => {
     }
 
     const { items, nextPageUrl, hasMorePages } = await scrapePage(url);
+
+    // Log summary of scraping results
+    console.log('Scraping summary:', {
+      totalItems: items.length,
+      itemsWithCategories: items.filter(i => i.categories.length > 0).length,
+      itemsWithBids: items.filter(i => i.bids > 0).length,
+      hasMorePages
+    });
 
     return new Response(
       JSON.stringify({
