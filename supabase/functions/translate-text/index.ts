@@ -10,7 +10,7 @@ const corsHeaders = {
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
-    return new Response('ok', { 
+    return new Response(null, { 
       headers: corsHeaders,
       status: 204,
     })
@@ -24,7 +24,10 @@ serve(async (req) => {
     if (!text || !targetLang) {
       console.error('Missing parameters:', { text, targetLang })
       return new Response(
-        JSON.stringify({ error: 'Missing required parameters' }),
+        JSON.stringify({ 
+          error: 'Missing required parameters',
+          details: { text, targetLang }
+        }),
         { 
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
           status: 400 
@@ -55,7 +58,12 @@ serve(async (req) => {
     const data = await response.json()
     console.log('Translation API response:', data)
     
-    const translatedText = data?.[0]?.[0]?.[0] || text
+    if (!data || !Array.isArray(data[0])) {
+      console.error('Invalid translation response format:', data)
+      throw new Error('Invalid translation response format')
+    }
+
+    const translatedText = data[0][0][0] || text
     console.log('Extracted translation:', translatedText)
 
     return new Response(
@@ -74,7 +82,8 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({ 
         error: error.message,
-        details: error.stack 
+        details: error.stack,
+        type: 'translation_error'
       }),
       { 
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

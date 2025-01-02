@@ -1,4 +1,4 @@
 project_id = "yssapojsghmotbifhybq"
 
-[check-auction-alerts]
+[translate-text]
 verify_jwt = false
