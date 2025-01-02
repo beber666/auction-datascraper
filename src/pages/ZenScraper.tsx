@@ -43,16 +43,16 @@ export default function ZenScraper() {
       
       let hasNext = true;
       let pageNum = 1;
-      let accumulatedResults: ScrapedItem[] = [];
       const seenUrls = new Set<string>();
+      let allResults: ScrapedItem[] = [];
 
       while (hasNext) {
         setCurrentPage(pageNum);
         const currentPageUrl = pageNum === 1 ? baseUrl : `${baseUrl}&p=${pageNum}`;
-        console.log('Scraping URL:', currentPageUrl); // Debug log
+        console.log('Scraping URL:', currentPageUrl);
         
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
-        console.log(`Page ${pageNum}: Found ${items.length} items, hasMore: ${more}, total pages: ${pages}`); // Debug log
+        console.log(`Page ${pageNum}: Found ${items.length} items, hasMore: ${more}, total pages: ${pages}`);
         
         // Filter out duplicates based on URL
         const uniqueItems = items.filter(item => {
@@ -63,10 +63,12 @@ export default function ZenScraper() {
           return true;
         });
 
-        // Accumulate unique results
-        accumulatedResults = [...accumulatedResults, ...uniqueItems];
-        setResults(accumulatedResults);
-        setFilteredResults(accumulatedResults);
+        // Add new unique items to our results
+        allResults = [...allResults, ...uniqueItems];
+        
+        // Update state with accumulated results
+        setResults(allResults);
+        setFilteredResults(allResults);
         setHasMorePages(more);
         setTotalPages(pages);
         setScrapedPages(pageNum);
@@ -81,7 +83,7 @@ export default function ZenScraper() {
 
       toast({
         title: "Success",
-        description: `Scraped ${accumulatedResults.length} unique items from ${pageNum} pages`,
+        description: `Scraped ${allResults.length} unique items from ${pageNum} pages`,
       });
     } catch (error) {
       console.error('Scraping error:', error);
