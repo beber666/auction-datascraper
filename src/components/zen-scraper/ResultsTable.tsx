@@ -1,20 +1,11 @@
-import { ScrapedItem } from "@/services/zenScraper";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Download, ExternalLink, PlusCircle } from "lucide-react";
-import { ZenScraperService } from "@/services/zenScraper";
-import { parseTimeToHours } from "./filters/FilterUtils";
+import { Table, TableBody } from "@/components/ui/table";
+import { ScrapedItem, ZenScraperService } from "@/services/zenScraper";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { useAuctionTranslation } from "@/hooks/auction/useAuctionTranslation";
-import { useEffect, useState } from "react";
+import { TableHeader } from "./results-table/TableHeader";
+import { TableRow } from "./results-table/TableRow";
+import { TableActions } from "./results-table/TableActions";
+import { useTableData } from "./results-table/useTableData";
 
 interface ResultsTableProps {
   results: ScrapedItem[];
@@ -32,34 +23,7 @@ export const ResultsTable = ({
   onSort 
 }: ResultsTableProps) => {
   const { toast } = useToast();
-  const { translateAuctionName } = useAuctionTranslation();
-  const [translatedResults, setTranslatedResults] = useState<ScrapedItem[]>([]);
-
-  useEffect(() => {
-    const translateTitles = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!session) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('preferred_language')
-        .eq('id', session.user.id)
-        .maybeSingle();
-
-      const userLanguage = profile?.preferred_language || 'en';
-
-      const translatedItems = await Promise.all(
-        results.map(async (item) => {
-          const translatedTitle = await translateAuctionName(item.title, userLanguage);
-          return { ...item, title: translatedTitle };
-        })
-      );
-
-      setTranslatedResults(translatedItems);
-    };
-
-    translateTitles();
-  }, [results]);
+  const { translatedResults, getSortedResults } = useTableData(results);
 
   const handleExport = () => {
     ZenScraperService.exportToExcel(translatedResults.length > 0 ? translatedResults : results);
@@ -77,14 +41,13 @@ export const ResultsTable = ({
     }
 
     try {
-      // Convert number_of_bids to string and ensure it's a single object, not an array
       const { error } = await supabase
         .from("auctions")
         .insert({
           url: item.url,
           product_name: item.title,
           current_price: item.currentPrice,
-          number_of_bids: item.bids.toString(), // Convert to string
+          number_of_bids: item.bids.toString(),
           time_remaining: item.timeRemaining,
           user_id: session.user.id,
         });
@@ -105,118 +68,30 @@ export const ResultsTable = ({
     }
   };
 
-  const getSortedResults = () => {
-    if (!sortColumn) return translatedResults.length > 0 ? translatedResults : results;
-
-    return [...(translatedResults.length > 0 ? translatedResults : results)].sort((a, b) => {
-      if (sortColumn === 'timeRemaining') {
-        const timeA = parseTimeToHours(a.timeRemaining);
-        const timeB = parseTimeToHours(b.timeRemaining);
-        return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
-      }
-      
-      if (sortColumn === 'currentPrice') {
-        const priceA = parseFloat(a.currentPrice.replace(/[^0-9.]/g, '')) || 0;
-        const priceB = parseFloat(b.currentPrice.replace(/[^0-9.]/g, '')) || 0;
-        return sortDirection === 'asc' ? priceA - priceB : priceB - priceA;
-      }
-
-      if (sortColumn === 'bids') {
-        const bidsA = typeof a.bids === 'string' ? parseInt(a.bids) || 0 : a.bids || 0;
-        const bidsB = typeof b.bids === 'string' ? parseInt(b.bids) || 0 : b.bids || 0;
-        return sortDirection === 'asc' ? bidsA - bidsB : bidsB - bidsA;
-      }
-
-      const valA = String(a[sortColumn]);
-      const valB = String(b[sortColumn]);
-      return sortDirection === 'asc' 
-        ? valA.localeCompare(valB)
-        : valB.localeCompare(valA);
-    });
-  };
-
-  const sortedResults = getSortedResults();
+  const sortedResults = getSortedResults(sortColumn, sortDirection);
 
   return (
     <div className="space-y-4">
-      <div className="flex justify-between items-center mb-4">
-        <h2 className="text-lg font-semibold">
-          Results ({results.length} items from {scrapedPages} {scrapedPages === 1 ? 'page' : 'pages'})
-        </h2>
-        <Button onClick={handleExport} variant="outline">
-          <Download className="mr-2 h-4 w-4" />
-          Export to Excel
-        </Button>
-      </div>
+      <TableActions 
+        resultsCount={results.length}
+        pagesCount={scrapedPages}
+        onExport={handleExport}
+      />
 
       <div className="border rounded-lg">
         <Table>
-          <TableHeader>
-            <TableRow>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => onSort('title')}
-              >
-                Title {sortColumn === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => onSort('currentPrice')}
-              >
-                Price {sortColumn === 'currentPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => onSort('buyoutPrice')}
-              >
-                Buyout {sortColumn === 'buyoutPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => onSort('bids')}
-              >
-                Bids {sortColumn === 'bids' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead>Categories</TableHead>
-              <TableHead 
-                className="cursor-pointer hover:bg-muted/50"
-                onClick={() => onSort('timeRemaining')}
-              >
-                Time Remaining {sortColumn === 'timeRemaining' && (sortDirection === 'asc' ? '↑' : '↓')}
-              </TableHead>
-              <TableHead>Actions</TableHead>
-            </TableRow>
-          </TableHeader>
+          <TableHeader 
+            sortColumn={sortColumn}
+            sortDirection={sortDirection}
+            onSort={onSort}
+          />
           <TableBody>
             {sortedResults.map((item, index) => (
-              <TableRow key={index}>
-                <TableCell className="font-medium">
-                  <a 
-                    href={item.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
-                  >
-                    {item.title}
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
-                </TableCell>
-                <TableCell>{item.currentPrice}</TableCell>
-                <TableCell>{item.buyoutPrice || 'N/A'}</TableCell>
-                <TableCell>{item.bids || '0'}</TableCell>
-                <TableCell>{item.categories.join(', ')}</TableCell>
-                <TableCell>{item.timeRemaining}</TableCell>
-                <TableCell>
-                  <Button 
-                    variant="outline" 
-                    size="sm"
-                    onClick={() => handleAddToTracker(item)}
-                  >
-                    <PlusCircle className="h-4 w-4 mr-2" />
-                    Add to Tracker
-                  </Button>
-                </TableCell>
-              </TableRow>
+              <TableRow 
+                key={index}
+                item={item}
+                onAddToTracker={handleAddToTracker}
+              />
             ))}
           </TableBody>
         </Table>
