@@ -100,7 +100,10 @@ export default function ZenScraper() {
                 <thead>
                   <tr className="border-b">
                     <th className="text-left p-2">Title</th>
+                    <th className="text-left p-2">Price</th>
+                    <th className="text-left p-2">Buyout</th>
                     <th className="text-left p-2">Bids</th>
+                    <th className="text-left p-2">Categories</th>
                     <th className="text-left p-2">Time Remaining</th>
                   </tr>
                 </thead>
@@ -108,7 +111,10 @@ export default function ZenScraper() {
                   {results.map((item, index) => (
                     <tr key={index} className="border-b">
                       <td className="p-2">{item.title}</td>
+                      <td className="p-2">{item.currentPrice}</td>
+                      <td className="p-2">{item.buyoutPrice || 'N/A'}</td>
                       <td className="p-2">{item.bids}</td>
+                      <td className="p-2">{item.categories.join(', ')}</td>
                       <td className="p-2">{item.timeRemaining}</td>
                     </tr>
                   ))}

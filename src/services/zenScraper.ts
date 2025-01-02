@@ -6,6 +6,8 @@ export interface ScrapedItem {
   bids: number;
   timeRemaining: string;
   categories: string[];
+  currentPrice: string;
+  buyoutPrice: string | null;
 }
 
 export class ZenScraperService {
@@ -35,6 +37,8 @@ export class ZenScraperService {
       URL: item.url,
       Bids: item.bids,
       'Time Remaining': item.timeRemaining,
+      'Current Price': item.currentPrice,
+      'Buyout Price': item.buyoutPrice || 'N/A',
       Categories: item.categories.join(', ')
     })));
 

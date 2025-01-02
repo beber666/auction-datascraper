@@ -8,6 +8,8 @@ interface ScrapedItem {
   bids: number;
   timeRemaining: string;
   categories: string[];
+  currentPrice: string;
+  buyoutPrice: string | null;
 }
 
 serve(async (req) => {
@@ -38,12 +40,23 @@ serve(async (req) => {
         const bidsEl = $el.find('.label.label-default.auction-label')
         const timeEl = $el.find('.glyphicon-time').parent()
         const categoryLinks = $el.find('div:contains("Category:") a.auction-url')
+        
+        // Get the price information from the adjacent col-md-3
+        const priceCol = $el.next('.col-md-3')
+        const currentPriceEl = priceCol.find('.auction-price .amount')
+        const buyoutPriceEl = priceCol.find('.auction-blitzprice .amount')
 
         const title = titleEl.text().trim()
         const url = 'https://zenmarket.jp/en/' + titleEl.attr('href')
         const bids = parseInt(bidsEl.text().replace('Bids: ', '')) || 0
         const timeRemaining = timeEl.text().replace('', '').trim()
+        
+        // Extract categories correctly
         const categories = categoryLinks.map((_, link) => $(link).text().trim()).get()
+
+        // Get prices in user's currency (we'll use EUR as default)
+        const currentPrice = currentPriceEl.attr('data-eur') || currentPriceEl.text()
+        const buyoutPrice = buyoutPriceEl.attr('data-eur') || buyoutPriceEl.text()
 
         if (title && url) {
           items.push({
@@ -51,7 +64,9 @@ serve(async (req) => {
             url,
             bids,
             timeRemaining,
-            categories
+            categories,
+            currentPrice: currentPrice.trim(),
+            buyoutPrice: buyoutPrice ? buyoutPrice.trim() : null
           })
         }
       })
@@ -59,7 +74,7 @@ serve(async (req) => {
       hasNextPage = $('.pagination .next').length > 0
       currentPage++
 
-      // Pause entre chaque requête pour éviter de surcharger le serveur
+      // Pause between requests to avoid overloading the server
       await new Promise(resolve => setTimeout(resolve, 1000))
     }
 
