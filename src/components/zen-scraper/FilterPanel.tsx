@@ -15,9 +15,9 @@ interface FilterPanelProps {
 
 export const FilterPanel = ({ onFilterChange, currency }: FilterPanelProps) => {
   const [hasPositiveBids, setHasPositiveBids] = useState(false);
-  const [maxHoursRemaining, setMaxHoursRemaining] = useState<number | null>(null);
-  const [minPrice, setMinPrice] = useState(0);
-  const [maxPrice, setMaxPrice] = useState(1000);
+  const [maxHoursRemaining, setMaxHoursRemaining] = useState<number>(24);
+  const [minPrice, setMinPrice] = useState<number>(0);
+  const [maxPrice, setMaxPrice] = useState<number>(1000);
 
   const handlePositiveBidsChange = (checked: boolean) => {
     setHasPositiveBids(checked);
@@ -28,12 +28,11 @@ export const FilterPanel = ({ onFilterChange, currency }: FilterPanelProps) => {
     });
   };
 
-  const handleHoursChange = (value: number[]) => {
-    const hours = value[0];
-    setMaxHoursRemaining(hours);
+  const handleHoursChange = (value: number) => {
+    setMaxHoursRemaining(value);
     onFilterChange({
       hasPositiveBids,
-      maxHoursRemaining: hours,
+      maxHoursRemaining: value,
       priceRange: [minPrice, maxPrice],
     });
   };
@@ -49,8 +48,8 @@ export const FilterPanel = ({ onFilterChange, currency }: FilterPanelProps) => {
   };
 
   return (
-    <div className="space-y-6 p-4 bg-white rounded-lg shadow-sm mb-6">
-      <h3 className="text-lg font-semibold mb-4">Filters</h3>
+    <div className="space-y-6 p-4 bg-white rounded-lg shadow mb-6">
+      <h2 className="text-lg font-semibold mb-4">Filters</h2>
       
       <div className="flex items-center space-x-4">
         <Switch
@@ -62,16 +61,14 @@ export const FilterPanel = ({ onFilterChange, currency }: FilterPanelProps) => {
       </div>
 
       <div className="space-y-2">
-        <Label>End time within (hours)</Label>
+        <Label>End time within (hours): {maxHoursRemaining}</Label>
         <Slider
-          defaultValue={[24]}
-          max={48}
+          value={[maxHoursRemaining]}
+          onValueChange={(values) => handleHoursChange(values[0])}
+          max={72}
+          min={1}
           step={1}
-          onValueChange={handleHoursChange}
         />
-        <div className="text-sm text-muted-foreground">
-          {maxHoursRemaining ? `${maxHoursRemaining} hours` : 'No limit'}
-        </div>
       </div>
 
       <div className="space-y-2">
@@ -79,17 +76,17 @@ export const FilterPanel = ({ onFilterChange, currency }: FilterPanelProps) => {
         <div className="flex items-center space-x-2">
           <Input
             type="number"
-            placeholder="Min"
             value={minPrice}
             onChange={(e) => handlePriceChange(Number(e.target.value), maxPrice)}
+            placeholder="Min"
             className="w-24"
           />
           <span>to</span>
           <Input
             type="number"
-            placeholder="Max"
             value={maxPrice}
             onChange={(e) => handlePriceChange(minPrice, Number(e.target.value))}
+            placeholder="Max"
             className="w-24"
           />
         </div>
