@@ -38,16 +38,33 @@ export default function ZenScraper() {
 
     try {
       let baseUrl = url;
-      // Remove any existing page parameter
+      // Remove any existing page parameter and ensure we have the correct URL format
       baseUrl = baseUrl.replace(/&p=\d+/, '');
+      
+      // Make sure we're using the /en/ version of the URL
+      if (!baseUrl.includes('/en/')) {
+        baseUrl = baseUrl.replace('zenmarket.jp/', 'zenmarket.jp/en/');
+      }
       
       let hasNext = true;
       let pageNum = 1;
 
       while (hasNext) {
         setCurrentPage(pageNum);
-        // Construct URL based on page number
-        const currentPageUrl = pageNum === 1 ? baseUrl : `${baseUrl}&p=${pageNum}`;
+        
+        // Construct the correct URL for pagination
+        let currentPageUrl;
+        if (pageNum === 1) {
+          currentPageUrl = baseUrl;
+        } else {
+          // For subsequent pages, we need to:
+          // 1. Remove /en/ from the URL
+          // 2. Add the page parameter before .aspx
+          const urlWithoutEn = baseUrl.replace('/en/', '/');
+          const [basePart, queryPart] = urlWithoutEn.split('.aspx');
+          currentPageUrl = `${basePart}.aspx?p=${pageNum}${queryPart ? `&${queryPart.substring(1)}` : ''}`;
+        }
+
         console.log('-------------------');
         console.log(`Scraping page ${pageNum}`);
         console.log('URL:', currentPageUrl);
