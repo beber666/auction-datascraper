@@ -39,7 +39,6 @@ export const ResultsTableHeader = ({ sortColumn, sortDirection, onSort }: Result
         >
           Bids {sortColumn === 'bids' && (sortDirection === 'asc' ? '↑' : '↓')}
         </TableHead>
-        <TableHead>Categories</TableHead>
         <TableHead 
           className="cursor-pointer hover:bg-muted/50"
           onClick={() => onSort('timeRemaining')}

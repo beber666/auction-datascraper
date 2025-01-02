@@ -25,7 +25,6 @@ export const TableRow = ({ item, onAddToTracker }: TableRowProps) => {
       <TableCell>{item.currentPrice}</TableCell>
       <TableCell>{item.buyoutPrice || 'N/A'}</TableCell>
       <TableCell>{item.bids || '0'}</TableCell>
-      <TableCell>{item.categories.join(', ')}</TableCell>
       <TableCell>{item.timeRemaining}</TableCell>
       <TableCell>
         <Button 
