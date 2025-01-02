@@ -42,7 +42,8 @@ export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) =
     // Filter by bids
     if (showOnlyWithBids) {
       filteredResults = filteredResults.filter((item) => {
-        const bidsCount = parseInt(item.bids || "0");
+        // Convert bids to number safely, treating null, undefined, or empty string as 0
+        const bidsCount = item.bids ? parseInt(item.bids.toString()) : 0;
         return bidsCount > 0;
       });
     }
