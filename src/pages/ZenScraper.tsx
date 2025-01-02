@@ -44,7 +44,6 @@ export default function ZenScraper() {
       let hasNext = true;
       let pageNum = 1;
       const seenUrls = new Set<string>();
-      let allResults: ScrapedItem[] = [];
 
       while (hasNext) {
         setCurrentPage(pageNum);
@@ -63,12 +62,13 @@ export default function ZenScraper() {
           return true;
         });
 
-        // Add new unique items to our results
-        allResults = [...allResults, ...uniqueItems];
+        // Update results using the callback pattern to ensure we have the latest state
+        setResults(prevResults => {
+          const newResults = [...prevResults, ...uniqueItems];
+          setFilteredResults(newResults); // Update filtered results as well
+          return newResults;
+        });
         
-        // Update state with accumulated results
-        setResults(allResults);
-        setFilteredResults(allResults);
         setHasMorePages(more);
         setTotalPages(pages);
         setScrapedPages(pageNum);
@@ -83,7 +83,7 @@ export default function ZenScraper() {
 
       toast({
         title: "Success",
-        description: `Scraped ${allResults.length} unique items from ${pageNum} pages`,
+        description: `Scraped ${seenUrls.size} unique items from ${pageNum} pages`,
       });
     } catch (error) {
       console.error('Scraping error:', error);
