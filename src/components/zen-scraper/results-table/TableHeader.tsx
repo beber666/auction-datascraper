@@ -1,19 +1,19 @@
 import {
   TableHead,
-  TableHeader,
+  TableHeader as UITableHeader,
   TableRow,
 } from "@/components/ui/table";
 import { ScrapedItem } from "@/services/zenScraper";
 
-interface TableHeaderProps {
+interface ResultsTableHeaderProps {
   sortColumn: keyof ScrapedItem | null;
   sortDirection: 'asc' | 'desc';
   onSort: (column: keyof ScrapedItem) => void;
 }
 
-export const TableHeader = ({ sortColumn, sortDirection, onSort }: TableHeaderProps) => {
+export const ResultsTableHeader = ({ sortColumn, sortDirection, onSort }: ResultsTableHeaderProps) => {
   return (
-    <TableHeader>
+    <UITableHeader>
       <TableRow>
         <TableHead 
           className="cursor-pointer hover:bg-muted/50"
@@ -48,6 +48,6 @@ export const TableHeader = ({ sortColumn, sortDirection, onSort }: TableHeaderPr
         </TableHead>
         <TableHead>Actions</TableHead>
       </TableRow>
-    </TableHeader>
+    </UITableHeader>
   );
 };

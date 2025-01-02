@@ -2,7 +2,7 @@ import { Table, TableBody } from "@/components/ui/table";
 import { ScrapedItem, ZenScraperService } from "@/services/zenScraper";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
-import { TableHeader } from "./results-table/TableHeader";
+import { ResultsTableHeader } from "./results-table/TableHeader";
 import { TableRow } from "./results-table/TableRow";
 import { TableActions } from "./results-table/TableActions";
 import { useTableData } from "./results-table/useTableData";
@@ -80,7 +80,7 @@ export const ResultsTable = ({
 
       <div className="border rounded-lg">
         <Table>
-          <TableHeader 
+          <ResultsTableHeader 
             sortColumn={sortColumn}
             sortDirection={sortDirection}
             onSort={onSort}
