@@ -4,8 +4,8 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ZenScraperService, ScrapedItem } from '@/services/zenScraper';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, Loader2, Download } from "lucide-react";
+import { Loader2, Download } from "lucide-react";
+import { ResultsFilter } from '@/components/zen-scraper/ResultsFilter';
 import {
   Table,
   TableBody,
@@ -21,6 +21,7 @@ export default function ZenScraper() {
   const [isLoading, setIsLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [results, setResults] = useState<ScrapedItem[]>([]);
+  const [filteredResults, setFilteredResults] = useState<ScrapedItem[]>([]);
   const [hasMorePages, setHasMorePages] = useState(false);
   const [scrapedPages, setScrapedPages] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -36,7 +37,7 @@ export default function ZenScraper() {
     }
   };
 
-  const sortedResults = [...results].sort((a, b) => {
+  const sortedResults = [...filteredResults].sort((a, b) => {
     if (!sortColumn) return 0;
     
     const aValue = a[sortColumn];
@@ -64,6 +65,7 @@ export default function ZenScraper() {
 
     setIsLoading(true);
     setResults([]);
+    setFilteredResults([]);
     setHasMorePages(false);
     setTotalPages(0);
     setCurrentPage(1);
@@ -79,7 +81,9 @@ export default function ZenScraper() {
         
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
         
-        setResults(prev => [...prev, ...items]);
+        const newResults = [...results, ...items];
+        setResults(newResults);
+        setFilteredResults(newResults);
         setHasMorePages(more);
         setTotalPages(pages);
         setScrapedPages(pageNum);
@@ -88,7 +92,6 @@ export default function ZenScraper() {
         if (hasNext) {
           pageNum++;
           currentPageUrl = `${url}&p=${pageNum}`;
-          // Add a delay between requests
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
@@ -113,7 +116,7 @@ export default function ZenScraper() {
     ZenScraperService.exportToExcel(sortedResults);
     toast({
       title: "Success",
-      description: `Exported ${results.length} items to Excel`,
+      description: `Exported ${sortedResults.length} items to Excel`,
     });
   };
 
@@ -157,15 +160,20 @@ export default function ZenScraper() {
 
       {results.length > 0 && (
         <div className="space-y-4">
-          <div className="flex justify-between items-center">
+          <div className="flex justify-between items-center mb-4">
             <h2 className="text-lg font-semibold">
-              Results ({results.length} items from {scrapedPages} {scrapedPages === 1 ? 'page' : 'pages'})
+              Results ({sortedResults.length} items from {scrapedPages} {scrapedPages === 1 ? 'page' : 'pages'})
             </h2>
             <Button onClick={handleExport} variant="outline">
               <Download className="mr-2 h-4 w-4" />
               Export to Excel
             </Button>
           </div>
+
+          <ResultsFilter 
+            results={results}
+            onFilterChange={setFilteredResults}
+          />
           
           <div className="border rounded-lg">
             <Table>
