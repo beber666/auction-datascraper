@@ -47,16 +47,17 @@ export const ResultsTable = ({
     }
 
     try {
+      // Convert number_of_bids to string and ensure it's a single object, not an array
       const { error } = await supabase
         .from("auctions")
-        .insert([{
+        .insert({
           url: item.url,
           product_name: item.title,
           current_price: item.currentPrice,
-          number_of_bids: item.bids,
+          number_of_bids: item.bids.toString(), // Convert to string
           time_remaining: item.timeRemaining,
           user_id: session.user.id,
-        }]);
+        });
 
       if (error) throw error;
 
