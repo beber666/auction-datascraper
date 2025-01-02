@@ -40,7 +40,7 @@ export default function ZenScraper() {
       let hasNext = true;
       let pageNum = 1;
 
-      while (hasNext && pageNum <= 5) { // Limit to 5 pages to prevent timeouts
+      while (hasNext) {
         setCurrentPage(pageNum);
         
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
@@ -58,7 +58,7 @@ export default function ZenScraper() {
           });
         }
 
-        hasNext = more && pageNum < 5;
+        hasNext = more;
         if (hasNext) {
           pageNum++;
           currentPageUrl = `${url}&p=${pageNum}`;
