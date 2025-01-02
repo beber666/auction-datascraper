@@ -13,9 +13,9 @@ interface ResultsFilterProps {
 export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) => {
   const [showOnlyWithBids, setShowOnlyWithBids] = useState(false);
   const [maxHoursRemaining, setMaxHoursRemaining] = useState<number>(24);
-  const [priceRange, setPriceRange] = useState<{ min: string; max: string }>({
-    min: "",
-    max: "",
+  const [priceRange, setPriceRange] = useState<{ min: number | null; max: number | null }>({
+    min: null,
+    max: null,
   });
 
   const parseTimeToHours = (timeStr: string): number | null => {
@@ -55,17 +55,25 @@ export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) =
     }
 
     // Filter by price range
-    if (priceRange.min || priceRange.max) {
+    if (priceRange.min !== null || priceRange.max !== null) {
       filteredResults = filteredResults.filter((item) => {
         const price = parsePriceValue(item.currentPrice);
-        const min = priceRange.min ? parseFloat(priceRange.min) : 0;
-        const max = priceRange.max ? parseFloat(priceRange.max) : Infinity;
+        const min = priceRange.min ?? 0;
+        const max = priceRange.max ?? Infinity;
         return price >= min && price <= max;
       });
     }
 
     onFilterChange(filteredResults);
   }, [results, showOnlyWithBids, maxHoursRemaining, priceRange, onFilterChange]);
+
+  const handlePriceChange = (type: 'min' | 'max', value: string) => {
+    const numValue = value === '' ? null : parseFloat(value);
+    setPriceRange(prev => ({
+      ...prev,
+      [type]: numValue
+    }));
+  };
 
   return (
     <div className="space-y-6 p-4 bg-white rounded-lg shadow-sm mb-6">
@@ -98,10 +106,8 @@ export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) =
           <Input
             id="min-price"
             type="number"
-            value={priceRange.min}
-            onChange={(e) =>
-              setPriceRange((prev) => ({ ...prev, min: e.target.value }))
-            }
+            value={priceRange.min ?? ''}
+            onChange={(e) => handlePriceChange('min', e.target.value)}
             placeholder="Min price"
           />
         </div>
@@ -110,10 +116,8 @@ export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) =
           <Input
             id="max-price"
             type="number"
-            value={priceRange.max}
-            onChange={(e) =>
-              setPriceRange((prev) => ({ ...prev, max: e.target.value }))
-            }
+            value={priceRange.max ?? ''}
+            onChange={(e) => handlePriceChange('max', e.target.value)}
             placeholder="Max price"
           />
         </div>
