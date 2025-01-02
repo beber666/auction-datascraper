@@ -1,4 +1,5 @@
 import * as XLSX from 'xlsx';
+import { supabase } from '@/integrations/supabase/client';
 
 export interface ScrapedItem {
   title: string;
@@ -10,11 +11,18 @@ export interface ScrapedItem {
   buyoutPrice: string | null;
 }
 
+interface ScrapeResponse {
+  items: ScrapedItem[];
+  hasMorePages: boolean;
+  totalPages: number;
+}
+
 export class ZenScraperService {
-  static async scrapeCategory(url: string, onProgress: (progress: number) => void): Promise<ScrapedItem[]> {
+  static async scrapeCategory(
+    url: string, 
+    onProgress: (progress: number) => void
+  ): Promise<ScrapeResponse> {
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
       const { data, error } = await supabase.functions.invoke('scrape-zen-category', {
         body: { url }
       });
@@ -24,7 +32,11 @@ export class ZenScraperService {
         throw new Error('Failed to scrape category data');
       }
 
-      return data.items;
+      return {
+        items: data.items,
+        hasMorePages: data.hasMorePages,
+        totalPages: data.totalPages
+      };
     } catch (error) {
       console.error('Error scraping category:', error);
       throw new Error('Failed to scrape category data');

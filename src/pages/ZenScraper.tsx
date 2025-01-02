@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { useToast } from "@/components/ui/use-toast";
 import { ZenScraperService, ScrapedItem } from '@/services/zenScraper';
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { InfoIcon } from "lucide-react";
 
 export default function ZenScraper() {
   const { toast } = useToast();
@@ -12,6 +14,8 @@ export default function ZenScraper() {
   const [isLoading, setIsLoading] = useState(false);
   const [progress, setProgress] = useState(0);
   const [results, setResults] = useState<ScrapedItem[]>([]);
+  const [hasMorePages, setHasMorePages] = useState(false);
+  const [totalPages, setTotalPages] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,16 +31,20 @@ export default function ZenScraper() {
     setIsLoading(true);
     setProgress(0);
     setResults([]);
+    setHasMorePages(false);
+    setTotalPages(0);
 
     try {
-      const items = await ZenScraperService.scrapeCategory(url, setProgress);
+      const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(url, setProgress);
       setResults(items);
+      setHasMorePages(more);
+      setTotalPages(pages);
       
       if (items.length > 0) {
         ZenScraperService.exportToExcel(items);
         toast({
           title: "Success",
-          description: `Exported ${items.length} items to Excel`,
+          description: `Exported ${items.length} items from ${pages} pages to Excel`,
         });
       } else {
         toast({
@@ -92,9 +100,18 @@ export default function ZenScraper() {
           </Button>
         </form>
 
+        {hasMorePages && (
+          <Alert className="mt-4">
+            <InfoIcon className="h-4 w-4" />
+            <AlertDescription>
+              Due to performance limitations, only the first {totalPages} pages were scraped. The category has more pages available.
+            </AlertDescription>
+          </Alert>
+        )}
+
         {results.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-lg font-semibold mb-4">Results Preview</h2>
+            <h2 className="text-lg font-semibold mb-4">Results Preview ({results.length} items from {totalPages} pages)</h2>
             <div className="overflow-auto max-h-96">
               <table className="w-full text-sm">
                 <thead>
