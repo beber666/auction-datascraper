@@ -26,21 +26,6 @@ export default function ZenScraper() {
     }
   };
 
-  const sortedResults = [...filteredResults].sort((a, b) => {
-    if (!sortColumn) return 0;
-    
-    const aValue = a[sortColumn];
-    const bValue = b[sortColumn];
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortDirection === 'asc' 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-    
-    return 0;
-  });
-
   const handleScrape = async (url: string) => {
     setIsLoading(true);
     // Reset all states at the start of a new scraping session
@@ -56,14 +41,24 @@ export default function ZenScraper() {
       let hasNext = true;
       let pageNum = 1;
       let accumulatedResults: ScrapedItem[] = [];
+      const seenUrls = new Set<string>(); // Track unique URLs
 
       while (hasNext) {
         setCurrentPage(pageNum);
         
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
         
-        // Accumulate results
-        accumulatedResults = [...accumulatedResults, ...items];
+        // Filter out duplicates based on URL
+        const uniqueItems = items.filter(item => {
+          if (seenUrls.has(item.url)) {
+            return false;
+          }
+          seenUrls.add(item.url);
+          return true;
+        });
+
+        // Accumulate unique results
+        accumulatedResults = [...accumulatedResults, ...uniqueItems];
         setResults(accumulatedResults);
         setFilteredResults(accumulatedResults);
         setHasMorePages(more);
@@ -81,7 +76,7 @@ export default function ZenScraper() {
 
       toast({
         title: "Success",
-        description: `Scraped ${accumulatedResults.length} items from ${pageNum} pages`,
+        description: `Scraped ${accumulatedResults.length} unique items from ${pageNum} pages`,
       });
     } catch (error) {
       console.error('Scraping error:', error);
@@ -113,7 +108,7 @@ export default function ZenScraper() {
           />
           
           <ResultsTable 
-            results={sortedResults}
+            results={filteredResults}
             scrapedPages={scrapedPages}
             sortColumn={sortColumn}
             sortDirection={sortDirection}
