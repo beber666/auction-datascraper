@@ -18,91 +18,99 @@ serve(async (req) => {
   }
 
   try {
-    const { url, page = 1 } = await req.json()
+    const { url } = await req.json()
     
     if (!url || !url.includes('zenmarket.jp')) {
       throw new Error('Invalid URL provided')
     }
 
+    console.log('Scraping URL:', url);
+
+    const response = await fetch(url)
+    if (!response.ok) {
+      throw new Error(`Failed to fetch page: ${response.status}`)
+    }
+    
+    const html = await response.text()
+    const $ = cheerio.load(html)
+
     const items: ScrapedItem[] = []
-    let hasNextPage = false
     let totalPages = 1
 
-    try {
-      console.log(`Scraping page ${page}`)
-      const pageUrl = page === 1 ? url : `${url}&p=${page}`
-      
-      const response = await fetch(pageUrl)
-      if (!response.ok) {
-        console.error(`Failed to fetch page ${page}: ${response.status}`)
-        throw new Error(`Failed to fetch page ${page}`)
-      }
-      
-      const html = await response.text()
-      const $ = cheerio.load(html)
-
-      // Get total pages from the page counter
-      const pageCounterText = $('#paging_totalPagesCount').text()
-      const pagesMatch = pageCounterText.match(/Page \d+ of (\d+)/)
-      if (pagesMatch) {
-        totalPages = parseInt(pagesMatch[1])
-        console.log(`Total pages detected: ${totalPages}`)
-      }
-
-      $('.col-md-7').each((_, element) => {
-        const $el = $(element)
-        const titleEl = $el.find('.translate a.auction-url')
-        const bidsEl = $el.find('.label.label-default.auction-label')
-        const timeEl = $el.find('.glyphicon-time').parent()
-        
-        const categoryContainer = $el.find('div:contains("Category:")')
-        const categoryLinks = categoryContainer.find('a.auction-url')
-        
-        const priceCol = $el.next('.col-md-3')
-        const currentPriceEl = priceCol.find('.auction-price .amount')
-        const buyoutPriceEl = priceCol.find('.auction-blitzprice .amount')
-
-        const title = titleEl.text().trim()
-        const url = 'https://zenmarket.jp/en/' + titleEl.attr('href')
-        const bids = parseInt(bidsEl.text().replace('Bids: ', '')) || 0
-        const timeRemaining = timeEl.text().replace('', '').trim()
-        
-        const categories = categoryLinks
-          .map((_, link) => $(link).text().trim())
-          .get()
-
-        const currentPrice = currentPriceEl.attr('data-eur') || currentPriceEl.text()
-        const buyoutPrice = buyoutPriceEl.attr('data-eur') || buyoutPriceEl.text()
-
-        if (title && url) {
-          items.push({
-            title,
-            url,
-            bids,
-            timeRemaining,
-            categories,
-            currentPrice: currentPrice.trim(),
-            buyoutPrice: buyoutPrice ? buyoutPrice.trim() : null
-          })
-        }
-      })
-
-      // Check if there's a next page
-      hasNextPage = page < totalPages
-
-      console.log(`Finished scraping page ${page}. Found ${items.length} items.`)
-
-    } catch (error) {
-      console.error(`Error scraping page ${page}:`, error)
-      throw error
+    // Get total pages
+    const pageCounterText = $('#paging_totalPagesCount').text()
+    const pagesMatch = pageCounterText.match(/Page \d+ of (\d+)/)
+    if (pagesMatch) {
+      totalPages = parseInt(pagesMatch[1])
+      console.log('Total pages:', totalPages)
     }
 
+    // Scrape items from the current page
+    $('.col-md-7').each((_, element) => {
+      const $el = $(element)
+      
+      // Get basic item info
+      const titleEl = $el.find('.translate a.auction-url')
+      const title = titleEl.text().trim()
+      const itemUrl = titleEl.attr('href')
+      
+      if (!title || !itemUrl) {
+        return // Skip if missing essential data
+      }
+
+      // Get bids count
+      const bidsEl = $el.find('.label.label-default.auction-label')
+      const bids = parseInt(bidsEl.text().replace('Bids: ', '')) || 0
+
+      // Get time remaining
+      const timeEl = $el.find('.glyphicon-time').parent()
+      const timeRemaining = timeEl.text().trim()
+
+      // Get categories
+      const categoryContainer = $el.find('div:contains("Category:")')
+      const categories = categoryContainer
+        .find('a.auction-url')
+        .map((_, link) => $(link).text().trim())
+        .get()
+
+      // Get prices from the next column
+      const priceCol = $el.next('.col-md-3')
+      const currentPriceEl = priceCol.find('.auction-price .amount')
+      const buyoutPriceEl = priceCol.find('.auction-blitzprice .amount')
+
+      const currentPrice = currentPriceEl.attr('data-eur') || currentPriceEl.text().trim()
+      const buyoutPrice = buyoutPriceEl.length ? 
+        (buyoutPriceEl.attr('data-eur') || buyoutPriceEl.text().trim()) : 
+        null
+
+      // Add the item to our results
+      items.push({
+        title,
+        url: 'https://zenmarket.jp/en/' + itemUrl,
+        bids,
+        timeRemaining,
+        categories,
+        currentPrice,
+        buyoutPrice
+      })
+    })
+
+    console.log(`Found ${items.length} items on this page`)
+    items.forEach((item, i) => {
+      console.log(`Item ${i + 1}:`)
+      console.log('Title:', item.title)
+      console.log('URL:', item.url)
+      console.log('Price:', item.currentPrice)
+      console.log('Time:', item.timeRemaining)
+      console.log('---')
+    })
+
     return new Response(
-      JSON.stringify({ 
-        success: true, 
+      JSON.stringify({
+        success: true,
         items,
         totalPages,
-        hasMorePages: hasNextPage
+        hasMorePages: false // We'll handle pagination in the next step
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

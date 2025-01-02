@@ -18,13 +18,12 @@ interface ScrapeResponse {
 }
 
 export class ZenScraperService {
-  static async scrapeCategory(
-    url: string,
-    page: number = 1
-  ): Promise<ScrapeResponse> {
+  static async scrapeCategory(url: string): Promise<ScrapeResponse> {
     try {
+      console.log('Scraping URL:', url);
+      
       const { data, error } = await supabase.functions.invoke('scrape-zen-category', {
-        body: { url, page }
+        body: { url }
       });
 
       if (error) {
