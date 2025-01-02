@@ -1,0 +1,4 @@
+project_id = "yssapojsghmotbifhybq"
+
+[check-auction-alerts]
+verify_jwt = false
