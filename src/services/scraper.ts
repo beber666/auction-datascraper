@@ -67,14 +67,18 @@ export class ScraperService {
       
       console.log('Making translation request to:', url);
       
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        headers: {
+          'Accept': 'application/json',
+          'User-Agent': 'Mozilla/5.0',
+        },
+        mode: 'cors',
+      });
       
       if (!response.ok) {
-        const errorText = await response.text();
         console.error('Translation API error:', {
           status: response.status,
           statusText: response.statusText,
-          error: errorText,
           url: url
         });
         return text;
@@ -98,6 +102,7 @@ export class ScraperService {
       return translatedText;
     } catch (error) {
       console.error('Translation error:', error);
+      // Return original text if translation fails
       return text;
     }
   }
