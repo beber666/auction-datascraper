@@ -2,8 +2,11 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
-  // This is critical for CORS to work
+  console.log('Translation function called with method:', req.method)
+
+  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
+    console.log('Handling OPTIONS request')
     return new Response(null, {
       status: 204,
       headers: corsHeaders
@@ -11,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Received translation request')
+    console.log('Processing translation request')
     const { text, targetLang } = await req.json()
     console.log('Request parameters:', { text, targetLang })
 
