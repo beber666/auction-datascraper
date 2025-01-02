@@ -1,6 +1,5 @@
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
 import { ScrapedItem } from "@/services/zenScraper";
 import { useEffect, useState } from "react";
@@ -12,7 +11,7 @@ interface ResultsFilterProps {
 
 export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) => {
   const [showOnlyWithBids, setShowOnlyWithBids] = useState(false);
-  const [maxHoursRemaining, setMaxHoursRemaining] = useState<number>(24);
+  const [maxHoursRemaining, setMaxHoursRemaining] = useState<string>('');
   const [priceRange, setPriceRange] = useState<{ min: number | null; max: number | null }>({
     min: null,
     max: null,
@@ -49,11 +48,14 @@ export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) =
     }
 
     // Filter by time remaining
-    if (maxHoursRemaining < 24) {
-      filteredResults = filteredResults.filter((item) => {
-        const hours = parseTimeToHours(item.timeRemaining);
-        return hours !== null && hours <= maxHoursRemaining;
-      });
+    if (maxHoursRemaining !== '') {
+      const maxHours = parseFloat(maxHoursRemaining);
+      if (!isNaN(maxHours)) {
+        filteredResults = filteredResults.filter((item) => {
+          const hours = parseTimeToHours(item.timeRemaining);
+          return hours !== null && hours <= maxHours;
+        });
+      }
     }
 
     // Filter by price range
@@ -91,13 +93,15 @@ export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) =
       </div>
 
       <div className="space-y-2">
-        <Label>Time remaining (max hours: {maxHoursRemaining})</Label>
-        <Slider
-          value={[maxHoursRemaining]}
-          onValueChange={(value) => setMaxHoursRemaining(value[0])}
-          max={24}
-          min={1}
-          step={1}
+        <Label htmlFor="max-hours">Maximum hours remaining</Label>
+        <Input
+          id="max-hours"
+          type="number"
+          value={maxHoursRemaining}
+          onChange={(e) => setMaxHoursRemaining(e.target.value)}
+          placeholder="Enter maximum hours"
+          min="0"
+          step="0.5"
           className="w-[60%]"
         />
       </div>
