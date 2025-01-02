@@ -44,6 +44,7 @@ export default function ZenScraper() {
       let hasNext = true;
       let pageNum = 1;
       const seenUrls = new Set<string>();
+      let currentResults: ScrapedItem[] = [];
 
       while (hasNext) {
         setCurrentPage(pageNum);
@@ -62,9 +63,12 @@ export default function ZenScraper() {
           return true;
         });
 
-        // Update results using functional update to ensure we have the latest state
-        setResults(prevResults => [...prevResults, ...uniqueItems]);
-        setFilteredResults(prevResults => [...prevResults, ...uniqueItems]);
+        // Add new items to current results
+        currentResults = [...currentResults, ...uniqueItems];
+        
+        // Update states with all accumulated results
+        setResults(currentResults);
+        setFilteredResults(currentResults);
         
         setHasMorePages(more);
         setTotalPages(pages);
