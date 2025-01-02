@@ -6,10 +6,10 @@ const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
 Deno.cron("check-auction-alerts", "* * * * *", async () => {
   const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
-  console.log("Starting auction alerts check...")
+  console.log("[check-auction-alerts] Démarrage de la vérification des alertes...")
 
   try {
-    // Get all active alerts with user preferences
+    // Récupérer toutes les alertes actives avec les préférences utilisateur
     const { data: alerts, error: alertsError } = await supabase
       .from('auction_alerts')
       .select(`
@@ -30,10 +30,11 @@ Deno.cron("check-auction-alerts", "* * * * *", async () => {
       `)
 
     if (alertsError) {
-      throw new Error(`Error fetching alerts: ${alertsError.message}`)
+      console.error("[check-auction-alerts] Erreur lors de la récupération des alertes:", alertsError)
+      throw new Error(`Erreur lors de la récupération des alertes: ${alertsError.message}`)
     }
 
-    console.log(`Found ${alerts.length} alerts to process`)
+    console.log(`[check-auction-alerts] ${alerts.length} alertes trouvées à traiter`)
 
     for (const alert of alerts) {
       try {
@@ -41,32 +42,43 @@ Deno.cron("check-auction-alerts", "* * * * *", async () => {
         const preferences = alert.alert_preferences
 
         if (!auction || !preferences) {
-          console.log(`Skipping alert ${alert.id}: Missing auction or preferences data`)
+          console.log(`[check-auction-alerts] Alerte ${alert.id} ignorée: Données d'enchère ou préférences manquantes`)
           continue
         }
 
-        // Parse time remaining (format: "1 day 2 hours" or "2 hours 30 minutes")
+        console.log(`[check-auction-alerts] Traitement de l'enchère ${auction.id}:`, {
+          productName: auction.product_name,
+          timeRemaining: auction.time_remaining,
+          preferences: {
+            enableTelegram: preferences.enable_telegram,
+            alertMinutes: preferences.alert_minutes
+          }
+        })
+
+        // Analyser le temps restant
         const timeStr = auction.time_remaining
         if (!timeStr) {
-          console.log(`Skipping auction ${auction.id}: No time remaining data`)
+          console.log(`[check-auction-alerts] Enchère ${auction.id} ignorée: Pas de données de temps restant`)
           continue
         }
 
-        // Convert time remaining to minutes
+        // Convertir le temps restant en minutes
         let totalMinutes = 0
-        const days = timeStr.match(/(\d+)\s*day/)
-        const hours = timeStr.match(/(\d+)\s*hour/)
-        const minutes = timeStr.match(/(\d+)\s*minute/)
+        const days = timeStr.match(/(\d+)\s*(day|jour|día|tag)/)
+        const hours = timeStr.match(/(\d+)\s*(hour|heure|hora|stunde)/)
+        const minutes = timeStr.match(/(\d+)\s*(min|minute|minuto)/)
 
         if (days) totalMinutes += parseInt(days[1]) * 24 * 60
         if (hours) totalMinutes += parseInt(hours[1]) * 60
         if (minutes) totalMinutes += parseInt(minutes[1])
 
-        console.log(`Auction ${auction.id} has ${totalMinutes} minutes remaining`)
+        console.log(`[check-auction-alerts] Enchère ${auction.id} - Temps restant calculé: ${totalMinutes} minutes`)
 
-        // Check if we should send notification
+        // Vérifier si nous devons envoyer une notification
         if (totalMinutes === preferences.alert_minutes) {
-          // Check if we've already sent a notification for this time
+          console.log(`[check-auction-alerts] Temps restant correspond aux préférences pour l'enchère ${auction.id}`)
+          
+          // Vérifier si nous avons déjà envoyé une notification pour ce temps
           const { data: existingNotif } = await supabase
             .from('sent_notifications')
             .select('*')
@@ -76,13 +88,13 @@ Deno.cron("check-auction-alerts", "* * * * *", async () => {
             .single()
 
           if (existingNotif) {
-            console.log(`Notification already sent for auction ${auction.id} at ${preferences.alert_minutes} minutes`)
+            console.log(`[check-auction-alerts] Notification déjà envoyée pour l'enchère ${auction.id} à ${preferences.alert_minutes} minutes`)
             continue
           }
 
-          // Send Telegram notification if enabled
+          // Envoyer la notification Telegram si activée
           if (preferences.enable_telegram && preferences.telegram_token && preferences.telegram_chat_id) {
-            console.log(`Sending Telegram notification for auction ${auction.id}`)
+            console.log(`[check-auction-alerts] Envoi de la notification Telegram pour l'enchère ${auction.id}`)
             
             const message = `🔔 Alerte Enchère!\n\n` +
               `${auction.product_name}\n` +
@@ -105,10 +117,13 @@ Deno.cron("check-auction-alerts", "* * * * *", async () => {
 
             if (!response.ok) {
               const errorText = await response.text()
-              throw new Error(`Telegram API error: ${errorText}`)
+              console.error(`[check-auction-alerts] Erreur API Telegram pour l'enchère ${auction.id}:`, errorText)
+              throw new Error(`Erreur API Telegram: ${errorText}`)
             }
 
-            // Record the sent notification
+            console.log(`[check-auction-alerts] Notification Telegram envoyée avec succès pour l'enchère ${auction.id}`)
+
+            // Enregistrer la notification envoyée
             const { error: notifError } = await supabase
               .from('sent_notifications')
               .insert({
@@ -118,19 +133,20 @@ Deno.cron("check-auction-alerts", "* * * * *", async () => {
               })
 
             if (notifError) {
-              throw new Error(`Error recording notification: ${notifError.message}`)
+              console.error(`[check-auction-alerts] Erreur lors de l'enregistrement de la notification:`, notifError)
+              throw new Error(`Erreur lors de l'enregistrement de la notification: ${notifError.message}`)
             }
 
-            console.log(`Successfully sent and recorded notification for auction ${auction.id}`)
+            console.log(`[check-auction-alerts] Notification enregistrée avec succès pour l'enchère ${auction.id}`)
           } else {
-            console.log(`Telegram notifications not enabled for user ${alert.user_id}`)
+            console.log(`[check-auction-alerts] Notifications Telegram non activées pour l'utilisateur ${alert.user_id}`)
           }
         }
       } catch (error) {
-        console.error(`Error processing alert ${alert.id}:`, error)
+        console.error(`[check-auction-alerts] Erreur lors du traitement de l'alerte ${alert.id}:`, error)
       }
     }
   } catch (error) {
-    console.error("Error in check-auction-alerts function:", error)
+    console.error("[check-auction-alerts] Erreur dans la fonction check-auction-alerts:", error)
   }
 })
