@@ -14,6 +14,7 @@ export default function ZenScraper() {
   const [currentPage, setCurrentPage] = useState(0);
   const [results, setResults] = useState<ScrapedItem[]>([]);
   const [hasMorePages, setHasMorePages] = useState(false);
+  const [scrapedPages, setScrapedPages] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -32,6 +33,7 @@ export default function ZenScraper() {
     setHasMorePages(false);
     setTotalPages(0);
     setCurrentPage(1);
+    setScrapedPages(0);
 
     try {
       let currentPageUrl = url;
@@ -46,12 +48,13 @@ export default function ZenScraper() {
         setResults(prev => [...prev, ...items]);
         setHasMorePages(more);
         setTotalPages(pages);
+        setScrapedPages(pageNum);
 
         if (items.length > 0 && pageNum === pages) {
           ZenScraperService.exportToExcel(results);
           toast({
             title: "Success",
-            description: `Exported ${results.length} items from ${pages} pages to Excel`,
+            description: `Exported ${results.length} items from ${pageNum} pages to Excel`,
           });
         }
 
@@ -72,7 +75,6 @@ export default function ZenScraper() {
       });
     } finally {
       setIsLoading(false);
-      setCurrentPage(0);
     }
   };
 
@@ -113,18 +115,20 @@ export default function ZenScraper() {
           </Button>
         </form>
 
-        {hasMorePages && (
+        {hasMorePages && scrapedPages > 0 && (
           <Alert className="mt-4">
             <InfoIcon className="h-4 w-4" />
             <AlertDescription>
-              Due to performance limitations, only the first {totalPages} pages were scraped. The category has more pages available.
+              Due to performance limitations, only {scrapedPages} {scrapedPages === 1 ? 'page was' : 'pages were'} scraped. The category has {totalPages} pages available.
             </AlertDescription>
           </Alert>
         )}
 
         {results.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-lg font-semibold mb-4">Results Preview ({results.length} items from {currentPage || totalPages} pages)</h2>
+            <h2 className="text-lg font-semibold mb-4">
+              Results Preview ({results.length} items from {scrapedPages} {scrapedPages === 1 ? 'page' : 'pages'})
+            </h2>
             <div className="overflow-auto max-h-96">
               <table className="w-full text-sm">
                 <thead>
