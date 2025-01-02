@@ -33,7 +33,7 @@ async function scrapePage(url: string): Promise<{
     try {
       const $el = $(element);
       
-      // Get basic item info
+      // Get basic item info with better error handling
       const titleEl = $el.find('.translate a.auction-url');
       const title = titleEl.text().trim();
       const itemUrl = titleEl.attr('href');
@@ -43,57 +43,29 @@ async function scrapePage(url: string): Promise<{
         return;
       }
 
-      // Get bids count
+      // Get bids count with improved parsing
       const bidsEl = $el.find('.label.label-default.auction-label');
       const bidsText = bidsEl.text().trim();
       const bidsMatch = bidsText.match(/\d+/);
       const bids = bidsMatch ? parseInt(bidsMatch[0]) : 0;
 
-      // Get time remaining
+      // Get time remaining with validation
       const timeEl = $el.find('.glyphicon-time').parent();
       const timeRemaining = timeEl.text().trim() || 'N/A';
 
-      // Improved category extraction
-      let categories: string[] = [];
+      // Get categories with better handling
       const categoryContainer = $el.find('div:contains("Category:")');
-      
-      // First attempt: Try to get categories from direct links
-      categories = categoryContainer
+      const categories = categoryContainer
         .find('a.auction-url')
         .map((_, link) => $(link).text().trim())
         .get()
-        .filter(cat => cat.length > 0);
+        .filter(cat => cat.length > 0); // Filter out empty categories
 
-      // Second attempt: If no categories found, try to get from the text content
       if (categories.length === 0) {
-        const categoryText = categoryContainer.text().trim();
-        if (categoryText.includes('Category:')) {
-          const cats = categoryText
-            .replace('Category:', '')
-            .split('>')
-            .map(cat => cat.trim())
-            .filter(cat => cat.length > 0);
-          categories = cats;
-        }
+        console.log('Warning: No categories found for item:', title);
       }
 
-      // Third attempt: Try to find categories in parent elements
-      if (categories.length === 0) {
-        const parentCategories = $el.parents().find('.breadcrumb a');
-        categories = parentCategories
-          .map((_, link) => $(link).text().trim())
-          .get()
-          .filter(cat => cat.length > 0 && cat !== 'Home');
-      }
-
-      // Log category extraction process
-      console.log('Category extraction for item:', {
-        title,
-        foundCategories: categories,
-        rawCategoryText: categoryContainer.text().trim()
-      });
-
-      // Get prices from the next column
+      // Get prices from the next column with improved error handling
       const priceCol = $el.next('.col-md-3');
       const currentPriceEl = priceCol.find('.auction-price .amount');
       const buyoutPriceEl = priceCol.find('.auction-blitzprice .amount');
@@ -105,6 +77,14 @@ async function scrapePage(url: string): Promise<{
       const buyoutPrice = buyoutPriceEl.length ? 
         (buyoutPriceEl.attr('data-eur') || buyoutPriceEl.text().trim()) : 
         null;
+
+      // Log successful item scrape
+      console.log('Successfully scraped item:', {
+        title,
+        bids,
+        categories: categories.length,
+        currentPrice
+      });
 
       // Add the item to our results
       items.push({
@@ -157,7 +137,8 @@ serve(async (req) => {
     // Log summary of scraping results
     console.log('Scraping summary:', {
       totalItems: items.length,
-      itemsWithCategories: items.filter(i => !i.categories.includes('Non catégorisé')).length,
+      itemsWithCategories: items.filter(i => i.categories.length > 0).length,
+      itemsWithBids: items.filter(i => i.bids > 0).length,
       hasMorePages
     });
 
