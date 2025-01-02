@@ -53,13 +53,18 @@ export default function ZenScraper() {
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
         console.log(`Page ${pageNum}: Found ${items.length} items, hasMore: ${more}, total pages: ${pages}`);
         
-        // Filter out duplicates based on URL but only if they're not already in our results
-        const uniqueItems = items.filter(item => !seenUrls.has(item.url));
-        
-        // Add the new URLs to our set after filtering
-        uniqueItems.forEach(item => seenUrls.add(item.url));
+        // On vérifie que l'URL n'est pas déjà dans nos résultats actuels
+        const uniqueItems = items.filter(item => {
+          const isUnique = !seenUrls.has(item.url);
+          if (isUnique) {
+            seenUrls.add(item.url);
+          }
+          return isUnique;
+        });
 
-        // Update results by adding new items to existing ones
+        console.log(`Page ${pageNum}: Adding ${uniqueItems.length} unique items`);
+        
+        // Mettre à jour les résultats en ajoutant les nouveaux éléments
         setResults(prevResults => [...prevResults, ...uniqueItems]);
         setFilteredResults(prevResults => [...prevResults, ...uniqueItems]);
         
@@ -67,7 +72,7 @@ export default function ZenScraper() {
         setTotalPages(pages);
         setScrapedPages(pageNum);
 
-        // Show toast for each page scraped
+        // Afficher une notification pour chaque page scrapée
         toast({
           title: `Page ${pageNum} scraped`,
           description: `Added ${uniqueItems.length} new items`,
@@ -76,7 +81,7 @@ export default function ZenScraper() {
         hasNext = more;
         if (hasNext) {
           pageNum++;
-          // Add a small delay between requests to avoid rate limiting
+          // Ajouter un petit délai entre les requêtes pour éviter le rate limiting
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
