@@ -11,7 +11,6 @@ export default function ZenScraper() {
   const [currentPage, setCurrentPage] = useState(0);
   const [results, setResults] = useState<ScrapedItem[]>([]);
   const [filteredResults, setFilteredResults] = useState<ScrapedItem[]>([]);
-  const [hasMorePages, setHasMorePages] = useState(false);
   const [scrapedPages, setScrapedPages] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [sortColumn, setSortColumn] = useState<keyof ScrapedItem | null>(null);
@@ -28,41 +27,39 @@ export default function ZenScraper() {
 
   const handleScrape = async (url: string) => {
     setIsLoading(true);
-    // Reset all states at the start of a new scraping session
     setResults([]);
     setFilteredResults([]);
-    setHasMorePages(false);
-    setTotalPages(0);
     setCurrentPage(1);
     setScrapedPages(0);
+    setTotalPages(0);
 
     try {
+      // Ensure we're using the /en/ version of the URL for the first page
       let baseUrl = url;
-      // Remove any existing page parameter and ensure we have the correct URL format
-      baseUrl = baseUrl.replace(/&p=\d+/, '');
-      
-      // Make sure we're using the /en/ version of the URL
       if (!baseUrl.includes('/en/')) {
         baseUrl = baseUrl.replace('zenmarket.jp/', 'zenmarket.jp/en/');
       }
-      
-      let hasNext = true;
-      let pageNum = 1;
 
-      while (hasNext) {
+      // Remove any existing page parameter
+      baseUrl = baseUrl.replace(/[?&]p=\d+/, '');
+
+      console.log('Starting scrape with base URL:', baseUrl);
+      
+      let pageNum = 1;
+      let hasMorePages = true;
+
+      while (hasMorePages) {
         setCurrentPage(pageNum);
         
-        // Construct the correct URL for pagination
+        // For page 1, use the /en/ URL
+        // For other pages, remove /en/ and add p=X parameter before other parameters
         let currentPageUrl;
         if (pageNum === 1) {
           currentPageUrl = baseUrl;
         } else {
-          // For subsequent pages, we need to:
-          // 1. Remove /en/ from the URL
-          // 2. Add the page parameter before .aspx
           const urlWithoutEn = baseUrl.replace('/en/', '/');
-          const [basePart, queryPart] = urlWithoutEn.split('.aspx');
-          currentPageUrl = `${basePart}.aspx?p=${pageNum}${queryPart ? `&${queryPart.substring(1)}` : ''}`;
+          const [basePart, queryPart] = urlWithoutEn.split('?');
+          currentPageUrl = `${basePart}?p=${pageNum}${queryPart ? `&${queryPart}` : ''}`;
         }
 
         console.log('-------------------');
@@ -71,7 +68,7 @@ export default function ZenScraper() {
         
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
         
-        console.log('Raw items from this page:');
+        console.log(`Raw items from page ${pageNum}:`);
         items.forEach((item, index) => {
           console.log(`Item ${index + 1}:`);
           console.log('- Title:', item.title);
@@ -80,41 +77,33 @@ export default function ZenScraper() {
           console.log('- Time:', item.timeRemaining);
           console.log('---');
         });
-        console.log(`Total items on page ${pageNum}:`, items.length);
-        console.log(`Has more pages: ${more}, Total pages: ${pages}`);
-        console.log('-------------------');
         
-        // Add all items from this page to our results
         setResults(prevResults => [...prevResults, ...items]);
         setFilteredResults(prevResults => [...prevResults, ...items]);
-        
-        setHasMorePages(more);
         setTotalPages(pages);
         setScrapedPages(pageNum);
 
-        // Show toast for each page scraped
         toast({
           title: `Page ${pageNum} scraped`,
-          description: `Added ${items.length} new items`,
+          description: `Added ${items.length} items`,
         });
 
-        hasNext = more;
-        if (hasNext) {
+        hasMorePages = more && pageNum < pages;
+        if (hasMorePages) {
           pageNum++;
-          // Add a small delay between requests to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
       toast({
-        title: "Success",
-        description: `Scraped ${results.length} items from ${pageNum} pages`,
+        title: "Scraping completed",
+        description: `Found ${results.length} items across ${pageNum} pages`,
       });
     } catch (error) {
       console.error('Scraping error:', error);
       toast({
         title: "Error",
-        description: "Failed to scrape the category page",
+        description: "Failed to scrape the category",
         variant: "destructive",
       });
     } finally {
