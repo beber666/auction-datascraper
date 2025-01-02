@@ -23,10 +23,10 @@ export const ResultsTable = ({
   onSort 
 }: ResultsTableProps) => {
   const { toast } = useToast();
-  const { translatedResults, getSortedResults } = useTableData(results);
+  const { getSortedResults } = useTableData(results);
 
   const handleExport = () => {
-    ZenScraperService.exportToExcel(translatedResults.length > 0 ? translatedResults : results);
+    ZenScraperService.exportToExcel(results);
   };
 
   const handleAddToTracker = async (item: ScrapedItem) => {
