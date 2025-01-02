@@ -48,10 +48,24 @@ export default function ZenScraper() {
         setCurrentPage(pageNum);
         // Construct URL based on page number
         const currentPageUrl = pageNum === 1 ? baseUrl : `${baseUrl}&p=${pageNum}`;
-        console.log('Scraping URL:', currentPageUrl);
+        console.log('-------------------');
+        console.log(`Scraping page ${pageNum}`);
+        console.log('URL:', currentPageUrl);
         
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
-        console.log(`Page ${pageNum}: Found ${items.length} items, hasMore: ${more}, total pages: ${pages}`);
+        
+        console.log('Raw items from this page:');
+        items.forEach((item, index) => {
+          console.log(`Item ${index + 1}:`);
+          console.log('- Title:', item.title);
+          console.log('- URL:', item.url);
+          console.log('- Price:', item.currentPrice);
+          console.log('- Time:', item.timeRemaining);
+          console.log('---');
+        });
+        console.log(`Total items on page ${pageNum}:`, items.length);
+        console.log(`Has more pages: ${more}, Total pages: ${pages}`);
+        console.log('-------------------');
         
         // Add all items from this page to our results
         setResults(prevResults => [...prevResults, ...items]);
