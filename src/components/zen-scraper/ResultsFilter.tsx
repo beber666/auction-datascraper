@@ -41,9 +41,10 @@ export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) =
 
     // Filter by bids
     if (showOnlyWithBids) {
-      filteredResults = filteredResults.filter(
-        (item) => parseInt(item.bids || "0") > 0
-      );
+      filteredResults = filteredResults.filter((item) => {
+        const bidsCount = parseInt(item.bids || "0");
+        return bidsCount > 0;
+      });
     }
 
     // Filter by time remaining
