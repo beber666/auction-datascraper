@@ -14,7 +14,7 @@ Deno.serve(async (req) => {
     const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
     console.log("[check-auction-alerts] Démarrage de la vérification des alertes...")
 
-    // Récupérer toutes les alertes actives avec les préférences utilisateur
+    // Récupérer d'abord toutes les alertes actives avec les données d'enchères
     const { data: alerts, error: alertsError } = await supabase
       .from('auction_alerts')
       .select(`
@@ -25,12 +25,6 @@ Deno.serve(async (req) => {
           product_name,
           current_price,
           url
-        ),
-        alert_preferences!alert_preferences_user_id_fkey (
-          enable_telegram,
-          telegram_token,
-          telegram_chat_id,
-          alert_minutes
         )
       `)
 
@@ -43,8 +37,19 @@ Deno.serve(async (req) => {
 
     for (const alert of alerts) {
       try {
+        // Récupérer les préférences d'alerte pour l'utilisateur
+        const { data: preferences, error: prefError } = await supabase
+          .from('alert_preferences')
+          .select('*')
+          .eq('user_id', alert.user_id)
+          .single()
+
+        if (prefError) {
+          console.error(`[check-auction-alerts] Erreur lors de la récupération des préférences pour l'utilisateur ${alert.user_id}:`, prefError)
+          continue
+        }
+
         const auction = alert.auctions
-        const preferences = alert.alert_preferences
 
         if (!auction || !preferences) {
           console.log(`[check-auction-alerts] Alerte ${alert.id} ignorée: Données d'enchère ou préférences manquantes`)
