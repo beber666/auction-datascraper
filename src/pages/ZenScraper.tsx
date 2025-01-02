@@ -2,17 +2,16 @@ import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { useToast } from "@/components/ui/use-toast";
+import { useToast } from "@/hooks/use-toast";
 import { ZenScraperService, ScrapedItem } from '@/services/zenScraper';
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
+import { InfoIcon, Loader2 } from "lucide-react";
 
 export default function ZenScraper() {
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [currentPage, setCurrentPage] = useState(0);
   const [results, setResults] = useState<ScrapedItem[]>([]);
   const [hasMorePages, setHasMorePages] = useState(false);
   const [totalPages, setTotalPages] = useState(0);
@@ -29,29 +28,40 @@ export default function ZenScraper() {
     }
 
     setIsLoading(true);
-    setProgress(0);
     setResults([]);
     setHasMorePages(false);
     setTotalPages(0);
+    setCurrentPage(1);
 
     try {
-      const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(url, setProgress);
-      setResults(items);
-      setHasMorePages(more);
-      setTotalPages(pages);
-      
-      if (items.length > 0) {
-        ZenScraperService.exportToExcel(items);
-        toast({
-          title: "Success",
-          description: `Exported ${items.length} items from ${pages} pages to Excel`,
-        });
-      } else {
-        toast({
-          title: "No items found",
-          description: "The category page returned no items",
-          variant: "destructive",
-        });
+      let currentPageUrl = url;
+      let hasNext = true;
+      let pageNum = 1;
+
+      while (hasNext && pageNum <= 5) { // Limit to 5 pages to prevent timeouts
+        setCurrentPage(pageNum);
+        
+        const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
+        
+        setResults(prev => [...prev, ...items]);
+        setHasMorePages(more);
+        setTotalPages(pages);
+
+        if (items.length > 0 && pageNum === pages) {
+          ZenScraperService.exportToExcel(results);
+          toast({
+            title: "Success",
+            description: `Exported ${results.length} items from ${pages} pages to Excel`,
+          });
+        }
+
+        hasNext = more && pageNum < 5;
+        if (hasNext) {
+          pageNum++;
+          currentPageUrl = `${url}&p=${pageNum}`;
+          // Add a delay between requests
+          await new Promise(resolve => setTimeout(resolve, 2000));
+        }
       }
     } catch (error) {
       console.error('Scraping error:', error);
@@ -62,7 +72,7 @@ export default function ZenScraper() {
       });
     } finally {
       setIsLoading(false);
-      setProgress(100);
+      setCurrentPage(0);
     }
   };
 
@@ -87,16 +97,19 @@ export default function ZenScraper() {
             />
           </div>
           
-          {isLoading && (
-            <Progress value={progress} className="w-full" />
-          )}
-          
           <Button
             type="submit"
             disabled={isLoading}
             className="w-full"
           >
-            {isLoading ? "Scraping..." : "Start Scraping"}
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Scraping page {currentPage}...</span>
+              </div>
+            ) : (
+              "Start Scraping"
+            )}
           </Button>
         </form>
 
@@ -111,7 +124,7 @@ export default function ZenScraper() {
 
         {results.length > 0 && (
           <div className="mt-6">
-            <h2 className="text-lg font-semibold mb-4">Results Preview ({results.length} items from {totalPages} pages)</h2>
+            <h2 className="text-lg font-semibold mb-4">Results Preview ({results.length} items from {currentPage || totalPages} pages)</h2>
             <div className="overflow-auto max-h-96">
               <table className="w-full text-sm">
                 <thead>
