@@ -4,11 +4,16 @@ import { corsHeaders } from '../_shared/cors.ts'
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
-Deno.cron("check-auction-alerts", "* * * * *", async () => {
-  const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
-  console.log("[check-auction-alerts] Démarrage de la vérification des alertes...")
+Deno.serve(async (req) => {
+  // Handle CORS
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders })
+  }
 
   try {
+    const supabase = createClient(supabaseUrl, supabaseServiceRoleKey)
+    console.log("[check-auction-alerts] Démarrage de la vérification des alertes...")
+
     // Récupérer toutes les alertes actives avec les préférences utilisateur
     const { data: alerts, error: alertsError } = await supabase
       .from('auction_alerts')
@@ -146,7 +151,17 @@ Deno.cron("check-auction-alerts", "* * * * *", async () => {
         console.error(`[check-auction-alerts] Erreur lors du traitement de l'alerte ${alert.id}:`, error)
       }
     }
+
+    return new Response(JSON.stringify({ success: true }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 200,
+    })
+
   } catch (error) {
     console.error("[check-auction-alerts] Erreur dans la fonction check-auction-alerts:", error)
+    return new Response(JSON.stringify({ error: error.message }), {
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      status: 500,
+    })
   }
 })
