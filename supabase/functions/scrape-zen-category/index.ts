@@ -29,7 +29,9 @@ serve(async (req) => {
     let hasNextPage = true
 
     while (hasNextPage) {
-      const pageUrl = `${url}${url.includes('?') ? '&' : '?'}page=${currentPage}`
+      const pageUrl = currentPage === 1 ? url : `${url}&p=${currentPage}`
+      console.log(`Scraping page ${currentPage}: ${pageUrl}`)
+      
       const response = await fetch(pageUrl)
       const html = await response.text()
       const $ = cheerio.load(html)
@@ -40,7 +42,7 @@ serve(async (req) => {
         const bidsEl = $el.find('.label.label-default.auction-label')
         const timeEl = $el.find('.glyphicon-time').parent()
         
-        // Amélioration du sélecteur pour les catégories
+        // Get categories from the Category section
         const categoryContainer = $el.find('div:contains("Category:")')
         const categoryLinks = categoryContainer.find('a.auction-url')
         
@@ -54,13 +56,12 @@ serve(async (req) => {
         const bids = parseInt(bidsEl.text().replace('Bids: ', '')) || 0
         const timeRemaining = timeEl.text().replace('', '').trim()
         
-        // Extraction correcte des catégories
+        // Extract categories correctly
         const categories = categoryLinks
           .map((_, link) => $(link).text().trim())
           .get()
-          .filter(category => category !== title) // S'assurer que le titre n'est pas inclus
 
-        // Get prices in user's currency (we'll use EUR as default)
+        // Get prices in EUR (default currency)
         const currentPrice = currentPriceEl.attr('data-eur') || currentPriceEl.text()
         const buyoutPrice = buyoutPriceEl.attr('data-eur') || buyoutPriceEl.text()
 
@@ -77,12 +78,16 @@ serve(async (req) => {
         }
       })
 
-      hasNextPage = $('.pagination .next').length > 0
-      currentPage++
-
-      // Pause between requests to avoid overloading the server
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // Check if there's a next page
+      hasNextPage = $('#paging_nextPage').length > 0
+      if (hasNextPage) {
+        currentPage++
+        // Add a small delay between requests to avoid overwhelming the server
+        await new Promise(resolve => setTimeout(resolve, 1000))
+      }
     }
+
+    console.log(`Finished scraping. Total items found: ${items.length}`)
 
     return new Response(
       JSON.stringify({ success: true, items }),
