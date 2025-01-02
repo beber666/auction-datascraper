@@ -1,4 +1,4 @@
-import { Home, User, Wrench } from "lucide-react";
+import { Home, User, Wrench, Download } from "lucide-react";
 import {
   Sidebar,
   SidebarContent,
@@ -26,6 +26,11 @@ const items = [
     title: "Tools",
     url: "/tools",
     icon: Wrench,
+  },
+  {
+    title: "Zen Scraper",
+    url: "/zen-scraper",
+    icon: Download,
   },
 ];
 

@@ -6,6 +6,7 @@ import Index from "@/pages/Index";
 import Account from "@/pages/Account";
 import Login from "@/pages/Login";
 import Tools from "@/pages/Tools";
+import ZenScraper from "@/pages/ZenScraper";
 
 function App() {
   return (
@@ -20,6 +21,7 @@ function App() {
                 <Route path="/account" element={<Account />} />
                 <Route path="/login" element={<Login />} />
                 <Route path="/tools" element={<Tools />} />
+                <Route path="/zen-scraper" element={<ZenScraper />} />
               </Routes>
             </main>
           </div>
