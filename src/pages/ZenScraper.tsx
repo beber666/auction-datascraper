@@ -4,7 +4,6 @@ import { ZenScraperService, ScrapedItem } from '@/services/zenScraper';
 import { ScrapeForm } from '@/components/zen-scraper/ScrapeForm';
 import { ResultsFilter } from '@/components/zen-scraper/ResultsFilter';
 import { ResultsTable } from '@/components/zen-scraper/ResultsTable';
-import { Button } from '@/components/ui/button';
 
 export default function ZenScraper() {
   const { toast } = useToast();
@@ -26,13 +25,13 @@ export default function ZenScraper() {
     }
   };
 
-  const handleScrapeNextPage = async () => {
-    if (!nextPageUrl || !hasMorePages) return;
+  const handleScrapeNextPage = async (url: string) => {
+    if (!url) return;
     
     setIsLoading(true);
     try {
       const { items, hasMorePages: morePages, nextPageUrl: newNextPageUrl } = 
-        await ZenScraperService.scrapeNextPage(nextPageUrl);
+        await ZenScraperService.scrapeNextPage(url);
       
       setResults(prevResults => [...prevResults, ...items]);
       setFilteredResults(prevResults => [...prevResults, ...items]);
@@ -44,6 +43,14 @@ export default function ZenScraper() {
         title: "Page scraped successfully",
         description: `Added ${items.length} new items from page ${scrapedPages + 1}`,
       });
+
+      // Automatically scrape next page if available
+      if (morePages && newNextPageUrl) {
+        // Add a small delay to avoid overwhelming the server
+        setTimeout(() => {
+          handleScrapeNextPage(newNextPageUrl);
+        }, 2000); // 2 second delay between pages
+      }
     } catch (error) {
       console.error('Scraping error:', error);
       toast({
@@ -84,6 +91,13 @@ export default function ZenScraper() {
         title: "First page scraped",
         description: `Found ${items.length} items on the first page`,
       });
+
+      // Automatically start scraping next pages if available
+      if (morePages && newNextPageUrl) {
+        setTimeout(() => {
+          handleScrapeNextPage(newNextPageUrl);
+        }, 2000); // 2 second delay before starting next page
+      }
     } catch (error) {
       console.error('Scraping error:', error);
       toast({
@@ -120,17 +134,6 @@ export default function ZenScraper() {
             sortDirection={sortDirection}
             onSort={handleSort}
           />
-
-          {hasMorePages && (
-            <div className="mt-4 flex justify-center">
-              <Button 
-                onClick={handleScrapeNextPage}
-                disabled={isLoading || !nextPageUrl}
-              >
-                {isLoading ? 'Loading next page...' : 'Load Next Page'}
-              </Button>
-            </div>
-          )}
         </>
       )}
     </div>
