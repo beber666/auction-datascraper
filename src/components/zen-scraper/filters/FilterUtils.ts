@@ -1,6 +1,6 @@
 import { ScrapedItem } from "@/services/zenScraper";
 
-export const parseTimeToHours = (timeStr: string): number | null => {
+export const parseTimeToHours = (timeStr: string): number => {
   const dayMatch = timeStr.match(/(\d+)\s*(?:day|jour|día|tag)/i);
   const hourMatch = timeStr.match(/(\d+)\s*(?:hour|heure|hora|stunde)/i);
   const minuteMatch = timeStr.match(/(\d+)\s*(?:min|minute|minuto)/i);
@@ -10,11 +10,12 @@ export const parseTimeToHours = (timeStr: string): number | null => {
   if (hourMatch) totalHours += parseInt(hourMatch[1]);
   if (minuteMatch) totalHours += parseInt(minuteMatch[1]) / 60;
 
-  return totalHours || null;
+  return totalHours;
 };
 
 export const parsePriceValue = (priceStr: string): number => {
-  const numericValue = priceStr.replace(/[^0-9.]/g, "");
+  // Remove currency symbols and non-numeric characters except dots
+  const numericValue = priceStr.replace(/[^0-9.]/g, '');
   return parseFloat(numericValue) || 0;
 };
 
@@ -22,27 +23,23 @@ export const filterByBids = (items: ScrapedItem[], showOnlyWithBids: boolean): S
   if (!showOnlyWithBids) return items;
   
   return items.filter((item) => {
-    const bidsValue = item.bids;
-    if (typeof bidsValue === 'number') {
-      return bidsValue > 0;
-    }
-    if (typeof bidsValue === 'string') {
-      const numericBids = parseInt(bidsValue, 10);
-      return !isNaN(numericBids) && numericBids > 0;
-    }
-    return false;
+    if (!item.bids) return false;
+    const numericBids = typeof item.bids === 'string' 
+      ? parseInt(item.bids, 10) 
+      : item.bids;
+    return numericBids > 0;
   });
 };
 
 export const filterByTime = (items: ScrapedItem[], maxHoursRemaining: string): ScrapedItem[] => {
-  if (maxHoursRemaining === '') return items;
+  if (!maxHoursRemaining) return items;
   
   const maxHours = parseFloat(maxHoursRemaining);
   if (isNaN(maxHours)) return items;
   
   return items.filter((item) => {
     const hours = parseTimeToHours(item.timeRemaining);
-    return hours !== null && hours <= maxHours;
+    return hours <= maxHours;
   });
 };
 
@@ -50,12 +47,17 @@ export const filterByPrice = (
   items: ScrapedItem[], 
   priceRange: { min: number | null; max: number | null }
 ): ScrapedItem[] => {
-  if (priceRange.min === null && priceRange.max === null) return items;
-  
   return items.filter((item) => {
     const price = parsePriceValue(item.currentPrice);
-    const min = priceRange.min ?? 0;
-    const max = priceRange.max ?? Infinity;
-    return price >= min && price <= max;
+    
+    if (priceRange.min !== null && price < priceRange.min) {
+      return false;
+    }
+    
+    if (priceRange.max !== null && price > priceRange.max) {
+      return false;
+    }
+    
+    return true;
   });
 };

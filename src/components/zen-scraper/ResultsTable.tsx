@@ -10,6 +10,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Download } from "lucide-react";
 import { ZenScraperService } from "@/services/zenScraper";
+import { parseTimeToHours } from "./filters/FilterUtils";
 
 interface ResultsTableProps {
   results: ScrapedItem[];
@@ -29,6 +30,38 @@ export const ResultsTable = ({
   const handleExport = () => {
     ZenScraperService.exportToExcel(results);
   };
+
+  const getSortedResults = () => {
+    if (!sortColumn) return results;
+
+    return [...results].sort((a, b) => {
+      if (sortColumn === 'timeRemaining') {
+        const timeA = parseTimeToHours(a.timeRemaining);
+        const timeB = parseTimeToHours(b.timeRemaining);
+        return sortDirection === 'asc' ? timeA - timeB : timeB - timeA;
+      }
+      
+      if (sortColumn === 'currentPrice') {
+        const priceA = parseFloat(a.currentPrice.replace(/[^0-9.]/g, '')) || 0;
+        const priceB = parseFloat(b.currentPrice.replace(/[^0-9.]/g, '')) || 0;
+        return sortDirection === 'asc' ? priceA - priceB : priceB - priceA;
+      }
+
+      if (sortColumn === 'bids') {
+        const bidsA = typeof a.bids === 'string' ? parseInt(a.bids) || 0 : a.bids || 0;
+        const bidsB = typeof b.bids === 'string' ? parseInt(b.bids) || 0 : b.bids || 0;
+        return sortDirection === 'asc' ? bidsA - bidsB : bidsB - bidsA;
+      }
+
+      const valA = String(a[sortColumn]);
+      const valB = String(b[sortColumn]);
+      return sortDirection === 'asc' 
+        ? valA.localeCompare(valB)
+        : valB.localeCompare(valA);
+    });
+  };
+
+  const sortedResults = getSortedResults();
 
   return (
     <div className="space-y-4">
@@ -80,7 +113,7 @@ export const ResultsTable = ({
             </TableRow>
           </TableHeader>
           <TableBody>
-            {results.map((item, index) => (
+            {sortedResults.map((item, index) => (
               <TableRow key={index}>
                 <TableCell className="font-medium">{item.title}</TableCell>
                 <TableCell>{item.currentPrice}</TableCell>
