@@ -61,38 +61,27 @@ export class ScraperService {
       // For English translations, use 'en-US' instead of just 'en'
       const normalizedTargetLang = targetLang.toLowerCase() === 'en' ? 'en-US' : targetLang.toLowerCase();
       console.log('Using target language code:', normalizedTargetLang);
+
+      const { supabase } = await import('@/integrations/supabase/client');
       
-      const encodedText = encodeURIComponent(text);
-      const url = `https://translate.googleapis.com/translate_a/single?client=gtx&sl=ja&tl=${normalizedTargetLang}&dt=t&q=${encodedText}`;
-      
-      console.log('Making translation request to:', url);
-      
-      const response = await fetch(url, {
-        headers: {
-          'Accept': 'application/json',
-          'User-Agent': 'Mozilla/5.0',
-        },
-        mode: 'cors',
+      const { data, error } = await supabase.functions.invoke('translate-text', {
+        body: { 
+          text,
+          targetLang: normalizedTargetLang 
+        }
       });
-      
-      if (!response.ok) {
-        console.error('Translation API error:', {
-          status: response.status,
-          statusText: response.statusText,
-          url: url
-        });
+
+      if (error) {
+        console.error('Translation API error:', error);
         return text;
       }
 
-      const data = await response.json();
-      console.log('Raw translation response:', JSON.stringify(data));
-
-      if (!data?.[0]?.[0]?.[0]) {
+      if (!data?.translatedText) {
         console.error('Invalid translation response format:', data);
         return text;
       }
 
-      const translatedText = data[0][0][0];
+      const translatedText = data.translatedText;
       console.log('Translation successful:', {
         original: text,
         translated: translatedText,
