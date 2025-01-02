@@ -1,11 +1,14 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
-import { corsHeaders } from '../_shared/cors.ts'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
 
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+}
+
 Deno.serve(async (req) => {
-  // Handle CORS
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
   }
@@ -21,7 +24,7 @@ Deno.serve(async (req) => {
         *,
         auctions (
           id,
-          time_remaining,
+          end_time,
           product_name,
           current_price,
           url
@@ -58,34 +61,27 @@ Deno.serve(async (req) => {
 
         console.log(`[check-auction-alerts] Traitement de l'enchère ${auction.id}:`, {
           productName: auction.product_name,
-          timeRemaining: auction.time_remaining,
+          endTime: auction.end_time,
           preferences: {
             enableTelegram: preferences.enable_telegram,
             alertMinutes: preferences.alert_minutes
           }
         })
 
-        // Analyser le temps restant
-        const timeStr = auction.time_remaining
-        if (!timeStr) {
-          console.log(`[check-auction-alerts] Enchère ${auction.id} ignorée: Pas de données de temps restant`)
+        if (!auction.end_time) {
+          console.log(`[check-auction-alerts] Enchère ${auction.id} ignorée: Pas de date de fin`)
           continue
         }
 
-        // Convertir le temps restant en minutes
-        let totalMinutes = 0
-        const days = timeStr.match(/(\d+)\s*(day|jour|día|tag)/)
-        const hours = timeStr.match(/(\d+)\s*(hour|heure|hora|stunde)/)
-        const minutes = timeStr.match(/(\d+)\s*(min|minute|minuto)/)
+        // Calculer le temps restant en minutes
+        const now = new Date()
+        const endTime = new Date(auction.end_time)
+        const minutesRemaining = Math.floor((endTime.getTime() - now.getTime()) / (1000 * 60))
 
-        if (days) totalMinutes += parseInt(days[1]) * 24 * 60
-        if (hours) totalMinutes += parseInt(hours[1]) * 60
-        if (minutes) totalMinutes += parseInt(minutes[1])
-
-        console.log(`[check-auction-alerts] Enchère ${auction.id} - Temps restant calculé: ${totalMinutes} minutes`)
+        console.log(`[check-auction-alerts] Enchère ${auction.id} - Minutes restantes: ${minutesRemaining}`)
 
         // Vérifier si nous devons envoyer une notification
-        if (totalMinutes === preferences.alert_minutes) {
+        if (minutesRemaining === preferences.alert_minutes) {
           console.log(`[check-auction-alerts] Temps restant correspond aux préférences pour l'enchère ${auction.id}`)
           
           // Vérifier si nous avons déjà envoyé une notification pour ce temps
@@ -109,7 +105,7 @@ Deno.serve(async (req) => {
             const message = `🔔 Alerte Enchère!\n\n` +
               `${auction.product_name}\n` +
               `Prix actuel: ${auction.current_price}\n` +
-              `Temps restant: ${auction.time_remaining}\n\n` +
+              `Fin de l'enchère: ${new Date(auction.end_time).toLocaleString('fr-FR')}\n\n` +
               `Voir l'enchère: ${auction.url}`
 
             const telegramUrl = `https://api.telegram.org/bot${preferences.telegram_token}/sendMessage`
