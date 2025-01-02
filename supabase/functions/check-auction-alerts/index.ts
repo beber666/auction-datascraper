@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
 const supabaseUrl = Deno.env.get('SUPABASE_URL')!
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY')
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -64,6 +65,7 @@ Deno.serve(async (req) => {
           endTime: auction.end_time,
           preferences: {
             enableTelegram: preferences.enable_telegram,
+            enableEmail: preferences.enable_email,
             alertMinutes: preferences.alert_minutes
           }
         })
@@ -98,16 +100,16 @@ Deno.serve(async (req) => {
             continue
           }
 
+          const message = `🔔 Alerte Enchère!\n\n` +
+            `${auction.product_name}\n` +
+            `Prix actuel: ${auction.current_price}\n` +
+            `Fin de l'enchère: ${new Date(auction.end_time).toLocaleString('fr-FR')}\n\n` +
+            `Voir l'enchère: ${auction.url}`
+
           // Envoyer la notification Telegram si activée
           if (preferences.enable_telegram && preferences.telegram_token && preferences.telegram_chat_id) {
             console.log(`[check-auction-alerts] Envoi de la notification Telegram pour l'enchère ${auction.id}`)
             
-            const message = `🔔 Alerte Enchère!\n\n` +
-              `${auction.product_name}\n` +
-              `Prix actuel: ${auction.current_price}\n` +
-              `Fin de l'enchère: ${new Date(auction.end_time).toLocaleString('fr-FR')}\n\n` +
-              `Voir l'enchère: ${auction.url}`
-
             const telegramUrl = `https://api.telegram.org/bot${preferences.telegram_token}/sendMessage`
             const response = await fetch(telegramUrl, {
               method: 'POST',
@@ -128,25 +130,59 @@ Deno.serve(async (req) => {
             }
 
             console.log(`[check-auction-alerts] Notification Telegram envoyée avec succès pour l'enchère ${auction.id}`)
-
-            // Enregistrer la notification envoyée
-            const { error: notifError } = await supabase
-              .from('sent_notifications')
-              .insert({
-                user_id: alert.user_id,
-                auction_id: auction.id,
-                alert_minutes: preferences.alert_minutes,
-              })
-
-            if (notifError) {
-              console.error(`[check-auction-alerts] Erreur lors de l'enregistrement de la notification:`, notifError)
-              throw new Error(`Erreur lors de l'enregistrement de la notification: ${notifError.message}`)
-            }
-
-            console.log(`[check-auction-alerts] Notification enregistrée avec succès pour l'enchère ${auction.id}`)
-          } else {
-            console.log(`[check-auction-alerts] Notifications Telegram non activées pour l'utilisateur ${alert.user_id}`)
           }
+
+          // Envoyer l'email si activé
+          if (preferences.enable_email) {
+            console.log(`[check-auction-alerts] Envoi de l'email pour l'enchère ${auction.id}`)
+            
+            // Récupérer l'email de l'utilisateur
+            const { data: userData } = await supabase.auth.admin.getUserById(alert.user_id)
+            if (userData?.user?.email && RESEND_API_KEY) {
+              try {
+                const emailResponse = await fetch("https://api.resend.com/emails", {
+                  method: "POST",
+                  headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${RESEND_API_KEY}`,
+                  },
+                  body: JSON.stringify({
+                    from: "Auction Alerts <onboarding@resend.dev>",
+                    to: [userData.user.email],
+                    subject: `🔔 Alerte: ${auction.product_name} se termine bientôt!`,
+                    html: message.replace(/\n/g, '<br>'),
+                  }),
+                });
+
+                if (!emailResponse.ok) {
+                  const error = await emailResponse.text();
+                  console.error(`[check-auction-alerts] Erreur lors de l'envoi de l'email pour l'enchère ${auction.id}:`, error);
+                } else {
+                  console.log(`[check-auction-alerts] Email envoyé avec succès pour l'enchère ${auction.id}`);
+                }
+              } catch (error) {
+                console.error(`[check-auction-alerts] Erreur lors de l'envoi de l'email pour l'enchère ${auction.id}:`, error);
+              }
+            } else {
+              console.log(`[check-auction-alerts] Email non envoyé pour l'enchère ${auction.id}: Email manquant ou RESEND_API_KEY non configurée`);
+            }
+          }
+
+          // Enregistrer la notification envoyée
+          const { error: notifError } = await supabase
+            .from('sent_notifications')
+            .insert({
+              user_id: alert.user_id,
+              auction_id: auction.id,
+              alert_minutes: preferences.alert_minutes,
+            })
+
+          if (notifError) {
+            console.error(`[check-auction-alerts] Erreur lors de l'enregistrement de la notification:`, notifError)
+            throw new Error(`Erreur lors de l'enregistrement de la notification: ${notifError.message}`)
+          }
+
+          console.log(`[check-auction-alerts] Notification enregistrée avec succès pour l'enchère ${auction.id}`)
         }
       } catch (error) {
         console.error(`[check-auction-alerts] Erreur lors du traitement de l'alerte ${alert.id}:`, error)
