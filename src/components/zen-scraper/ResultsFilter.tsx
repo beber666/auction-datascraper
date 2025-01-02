@@ -41,9 +41,19 @@ export const ResultsFilter = ({ results, onFilterChange }: ResultsFilterProps) =
     // Filter by bids
     if (showOnlyWithBids) {
       filteredResults = filteredResults.filter((item) => {
-        // Convert bids to number safely, treating null, undefined, or empty string as 0
-        const bidsCount = item.bids ? parseInt(item.bids.toString()) : 0;
-        return bidsCount > 0;
+        // Convertir la valeur des enchères en nombre, en traitant les cas null/undefined
+        const bidsValue = item.bids;
+        // Si bidsValue est un nombre, on le compare directement
+        if (typeof bidsValue === 'number') {
+          return bidsValue > 0;
+        }
+        // Si c'est une chaîne, on la convertit en nombre
+        if (typeof bidsValue === 'string') {
+          const numericBids = parseInt(bidsValue, 10);
+          return !isNaN(numericBids) && numericBids > 0;
+        }
+        // Si c'est null/undefined ou autre, on retourne false
+        return false;
       });
     }
 
