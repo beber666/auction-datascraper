@@ -4,6 +4,7 @@ import { ZenScraperService, ScrapedItem } from '@/services/zenScraper';
 import { ScrapeForm } from '@/components/zen-scraper/ScrapeForm';
 import { ResultsFilter } from '@/components/zen-scraper/ResultsFilter';
 import { ResultsTable } from '@/components/zen-scraper/ResultsTable';
+import { Button } from '@/components/ui/button';
 
 export default function ZenScraper() {
   const { toast } = useToast();
@@ -13,6 +14,8 @@ export default function ZenScraper() {
   const [scrapedPages, setScrapedPages] = useState(0);
   const [sortColumn, setSortColumn] = useState<keyof ScrapedItem | null>(null);
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
+  const [hasMorePages, setHasMorePages] = useState(false);
 
   const handleSort = (column: keyof ScrapedItem) => {
     if (sortColumn === column) {
@@ -23,11 +26,43 @@ export default function ZenScraper() {
     }
   };
 
-  const handleScrape = async (url: string) => {
+  const handleScrapeNextPage = async () => {
+    if (!nextPageUrl || !hasMorePages) return;
+    
+    setIsLoading(true);
+    try {
+      const { items, hasMorePages: morePages, nextPageUrl: newNextPageUrl } = 
+        await ZenScraperService.scrapeNextPage(nextPageUrl);
+      
+      setResults(prevResults => [...prevResults, ...items]);
+      setFilteredResults(prevResults => [...prevResults, ...items]);
+      setScrapedPages(prev => prev + 1);
+      setNextPageUrl(newNextPageUrl);
+      setHasMorePages(morePages);
+
+      toast({
+        title: "Page scraped successfully",
+        description: `Added ${items.length} new items from page ${scrapedPages + 1}`,
+      });
+    } catch (error) {
+      console.error('Scraping error:', error);
+      toast({
+        title: "Error",
+        description: "Failed to scrape the next page",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleInitialScrape = async (url: string) => {
     setIsLoading(true);
     setResults([]);
     setFilteredResults([]);
     setScrapedPages(0);
+    setNextPageUrl(null);
+    setHasMorePages(false);
 
     try {
       // Ensure we're using the /en/ version of the URL for the first page
@@ -36,15 +71,18 @@ export default function ZenScraper() {
         scrapingUrl = scrapingUrl.replace('zenmarket.jp/', 'zenmarket.jp/en/');
       }
 
-      const { items, totalPages } = await ZenScraperService.scrapeCategory(scrapingUrl);
+      const { items, hasMorePages: morePages, nextPageUrl: newNextPageUrl } = 
+        await ZenScraperService.scrapeNextPage(scrapingUrl);
       
       setResults(items);
       setFilteredResults(items);
-      setScrapedPages(totalPages);
+      setScrapedPages(1);
+      setNextPageUrl(newNextPageUrl);
+      setHasMorePages(morePages);
 
       toast({
-        title: "Scraping completed",
-        description: `Found ${items.length} items across ${totalPages} pages`,
+        title: "First page scraped",
+        description: `Found ${items.length} items on the first page`,
       });
     } catch (error) {
       console.error('Scraping error:', error);
@@ -63,7 +101,7 @@ export default function ZenScraper() {
       <h1 className="text-2xl font-bold mb-6">Zen Market Category Scraper</h1>
       
       <ScrapeForm 
-        onScrapeStart={handleScrape}
+        onScrapeStart={handleInitialScrape}
         isLoading={isLoading}
         currentPage={scrapedPages}
       />
@@ -82,6 +120,17 @@ export default function ZenScraper() {
             sortDirection={sortDirection}
             onSort={handleSort}
           />
+
+          {hasMorePages && (
+            <div className="mt-4 flex justify-center">
+              <Button 
+                onClick={handleScrapeNextPage}
+                disabled={isLoading || !nextPageUrl}
+              >
+                {isLoading ? 'Loading next page...' : 'Load Next Page'}
+              </Button>
+            </div>
+          )}
         </>
       )}
     </div>

@@ -12,7 +12,11 @@ interface ScrapedItem {
   buyoutPrice: string | null;
 }
 
-async function scrapePage(url: string): Promise<{ items: ScrapedItem[], nextPageUrl: string | null }> {
+async function scrapePage(url: string): Promise<{ 
+  items: ScrapedItem[], 
+  nextPageUrl: string | null,
+  hasMorePages: boolean 
+}> {
   console.log('Scraping URL:', url);
   
   const response = await fetch(url);
@@ -80,6 +84,8 @@ async function scrapePage(url: string): Promise<{ items: ScrapedItem[], nextPage
     'https://zenmarket.jp' + nextPageEl.attr('href') : 
     null;
 
+  const hasMorePages = nextPageUrl !== null;
+
   console.log(`Found ${items.length} items on this page`);
   if (nextPageUrl) {
     console.log('Next page URL:', nextPageUrl);
@@ -87,26 +93,7 @@ async function scrapePage(url: string): Promise<{ items: ScrapedItem[], nextPage
     console.log('No more pages to scrape');
   }
 
-  return { items, nextPageUrl };
-}
-
-async function scrapeAllPages(startUrl: string): Promise<ScrapedItem[]> {
-  let currentUrl = startUrl;
-  let allItems: ScrapedItem[] = [];
-  let pageCount = 1;
-
-  while (currentUrl) {
-    console.log(`Scraping page ${pageCount}`);
-    const { items, nextPageUrl } = await scrapePage(currentUrl);
-    allItems = [...allItems, ...items];
-    
-    if (!nextPageUrl) break;
-    currentUrl = nextPageUrl;
-    pageCount++;
-  }
-
-  console.log(`Finished scraping ${pageCount} pages. Total items: ${allItems.length}`);
-  return allItems;
+  return { items, nextPageUrl, hasMorePages };
 }
 
 serve(async (req) => {
@@ -121,13 +108,13 @@ serve(async (req) => {
       throw new Error('Invalid URL provided');
     }
 
-    const items = await scrapeAllPages(url);
+    const { items, nextPageUrl, hasMorePages } = await scrapePage(url);
 
     return new Response(
       JSON.stringify({
-        success: true,
         items,
-        totalPages: Math.ceil(items.length / 20) // Assuming 20 items per page
+        nextPageUrl,
+        hasMorePages
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },

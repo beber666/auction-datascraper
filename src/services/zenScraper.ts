@@ -14,16 +14,16 @@ export interface ScrapedItem {
 interface ScrapeResponse {
   items: ScrapedItem[];
   hasMorePages: boolean;
-  totalPages: number;
+  nextPageUrl: string | null;
 }
 
 export class ZenScraperService {
-  static async scrapeCategory(url: string): Promise<ScrapeResponse> {
+  static async scrapeNextPage(url: string): Promise<ScrapeResponse> {
     try {
       console.log('Scraping URL:', url);
       
       const { data, error } = await supabase.functions.invoke('scrape-zen-category', {
-        body: { url }
+        body: { url, singlePage: true }
       });
 
       if (error) {
@@ -34,7 +34,7 @@ export class ZenScraperService {
       return {
         items: data.items,
         hasMorePages: data.hasMorePages,
-        totalPages: data.totalPages
+        nextPageUrl: data.nextPageUrl
       };
     } catch (error) {
       console.error('Error scraping category:', error);
