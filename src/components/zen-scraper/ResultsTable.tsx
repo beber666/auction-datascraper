@@ -8,9 +8,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Download } from "lucide-react";
+import { Download, ExternalLink, PlusCircle } from "lucide-react";
 import { ZenScraperService } from "@/services/zenScraper";
 import { parseTimeToHours } from "./filters/FilterUtils";
+import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 interface ResultsTableProps {
   results: ScrapedItem[];
@@ -27,8 +29,49 @@ export const ResultsTable = ({
   sortDirection, 
   onSort 
 }: ResultsTableProps) => {
+  const { toast } = useToast();
+
   const handleExport = () => {
     ZenScraperService.exportToExcel(results);
+  };
+
+  const handleAddToTracker = async (item: ScrapedItem) => {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      toast({
+        title: "Erreur",
+        description: "Vous devez être connecté pour ajouter une enchère",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const { error } = await supabase
+        .from("auctions")
+        .insert([{
+          url: item.url,
+          product_name: item.title,
+          current_price: item.currentPrice,
+          number_of_bids: item.bids,
+          time_remaining: item.timeRemaining,
+          user_id: session.user.id,
+        }]);
+
+      if (error) throw error;
+
+      toast({
+        title: "Succès",
+        description: "L'enchère a été ajoutée au tracker",
+      });
+    } catch (error) {
+      console.error('Error adding auction:', error);
+      toast({
+        title: "Erreur",
+        description: "Impossible d'ajouter l'enchère au tracker",
+        variant: "destructive",
+      });
+    }
   };
 
   const getSortedResults = () => {
@@ -110,17 +153,38 @@ export const ResultsTable = ({
               >
                 Time Remaining {sortColumn === 'timeRemaining' && (sortDirection === 'asc' ? '↑' : '↓')}
               </TableHead>
+              <TableHead>Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {sortedResults.map((item, index) => (
               <TableRow key={index}>
-                <TableCell className="font-medium">{item.title}</TableCell>
+                <TableCell className="font-medium">
+                  <a 
+                    href={item.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800"
+                  >
+                    {item.title}
+                    <ExternalLink className="h-4 w-4" />
+                  </a>
+                </TableCell>
                 <TableCell>{item.currentPrice}</TableCell>
                 <TableCell>{item.buyoutPrice || 'N/A'}</TableCell>
                 <TableCell>{item.bids || '0'}</TableCell>
                 <TableCell>{item.categories.join(', ')}</TableCell>
                 <TableCell>{item.timeRemaining}</TableCell>
+                <TableCell>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => handleAddToTracker(item)}
+                  >
+                    <PlusCircle className="h-4 w-4 mr-2" />
+                    Add to Tracker
+                  </Button>
+                </TableCell>
               </TableRow>
             ))}
           </TableBody>
