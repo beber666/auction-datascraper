@@ -39,7 +39,10 @@ serve(async (req) => {
         const titleEl = $el.find('.translate a.auction-url')
         const bidsEl = $el.find('.label.label-default.auction-label')
         const timeEl = $el.find('.glyphicon-time').parent()
-        const categoryLinks = $el.find('div:contains("Category:") a.auction-url')
+        
+        // Amélioration du sélecteur pour les catégories
+        const categoryContainer = $el.find('div:contains("Category:")')
+        const categoryLinks = categoryContainer.find('a.auction-url')
         
         // Get the price information from the adjacent col-md-3
         const priceCol = $el.next('.col-md-3')
@@ -51,8 +54,11 @@ serve(async (req) => {
         const bids = parseInt(bidsEl.text().replace('Bids: ', '')) || 0
         const timeRemaining = timeEl.text().replace('', '').trim()
         
-        // Extract categories correctly
-        const categories = categoryLinks.map((_, link) => $(link).text().trim()).get()
+        // Extraction correcte des catégories
+        const categories = categoryLinks
+          .map((_, link) => $(link).text().trim())
+          .get()
+          .filter(category => category !== title) // S'assurer que le titre n'est pas inclus
 
         // Get prices in user's currency (we'll use EUR as default)
         const currentPrice = currentPriceEl.attr('data-eur') || currentPriceEl.text()
