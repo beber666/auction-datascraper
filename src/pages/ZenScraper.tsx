@@ -37,16 +37,22 @@ export default function ZenScraper() {
     setScrapedPages(0);
 
     try {
-      let currentPageUrl = url;
+      let baseUrl = url;
+      // Remove any existing page parameter
+      baseUrl = baseUrl.replace(/&p=\d+/, '');
+      
       let hasNext = true;
       let pageNum = 1;
       let accumulatedResults: ScrapedItem[] = [];
-      const seenUrls = new Set<string>(); // Track unique URLs
+      const seenUrls = new Set<string>();
 
       while (hasNext) {
         setCurrentPage(pageNum);
+        const currentPageUrl = pageNum === 1 ? baseUrl : `${baseUrl}&p=${pageNum}`;
+        console.log('Scraping URL:', currentPageUrl); // Debug log
         
         const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
+        console.log(`Page ${pageNum}: Found ${items.length} items, hasMore: ${more}, total pages: ${pages}`); // Debug log
         
         // Filter out duplicates based on URL
         const uniqueItems = items.filter(item => {
@@ -68,7 +74,6 @@ export default function ZenScraper() {
         hasNext = more;
         if (hasNext) {
           pageNum++;
-          currentPageUrl = `${url}&p=${pageNum}`;
           // Add a small delay between requests to avoid rate limiting
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
