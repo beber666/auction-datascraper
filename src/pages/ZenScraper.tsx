@@ -4,51 +4,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
 import { ZenScraperService, ScrapedItem } from '@/services/zenScraper';
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon, Loader2, Download } from "lucide-react";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { Loader2 } from "lucide-react";
+import { FilterPanel } from '@/components/zen-scraper/FilterPanel';
+import { ResultsTable } from '@/components/zen-scraper/ResultsTable';
 
 export default function ZenScraper() {
   const { toast } = useToast();
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [currentPage, setCurrentPage] = useState(0);
   const [results, setResults] = useState<ScrapedItem[]>([]);
-  const [hasMorePages, setHasMorePages] = useState(false);
-  const [scrapedPages, setScrapedPages] = useState(0);
-  const [totalPages, setTotalPages] = useState(0);
-  const [sortColumn, setSortColumn] = useState<keyof ScrapedItem | null>(null);
-  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
-
-  const handleSort = (column: keyof ScrapedItem) => {
-    if (sortColumn === column) {
-      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
-    } else {
-      setSortColumn(column);
-      setSortDirection('asc');
-    }
-  };
-
-  const sortedResults = [...results].sort((a, b) => {
-    if (!sortColumn) return 0;
-    
-    const aValue = a[sortColumn];
-    const bValue = b[sortColumn];
-    
-    if (typeof aValue === 'string' && typeof bValue === 'string') {
-      return sortDirection === 'asc' 
-        ? aValue.localeCompare(bValue)
-        : bValue.localeCompare(aValue);
-    }
-    
-    return 0;
+  const [filters, setFilters] = useState({
+    hasPositiveBids: false,
+    maxHoursRemaining: null as number | null,
+    priceRange: [0, 1000] as [number, number],
   });
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -64,10 +32,6 @@ export default function ZenScraper() {
 
     setIsLoading(true);
     setResults([]);
-    setHasMorePages(false);
-    setTotalPages(0);
-    setCurrentPage(1);
-    setScrapedPages(0);
 
     try {
       let currentPageUrl = url;
@@ -75,27 +39,19 @@ export default function ZenScraper() {
       let pageNum = 1;
 
       while (hasNext) {
-        setCurrentPage(pageNum);
-        
-        const { items, hasMorePages: more, totalPages: pages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
-        
+        const { items, hasMorePages } = await ZenScraperService.scrapeCategory(currentPageUrl, pageNum);
         setResults(prev => [...prev, ...items]);
-        setHasMorePages(more);
-        setTotalPages(pages);
-        setScrapedPages(pageNum);
-
-        hasNext = more;
+        hasNext = hasMorePages;
         if (hasNext) {
           pageNum++;
           currentPageUrl = `${url}&p=${pageNum}`;
-          // Add a delay between requests
           await new Promise(resolve => setTimeout(resolve, 2000));
         }
       }
 
       toast({
         title: "Success",
-        description: `Scraped ${results.length} items from ${pageNum} pages`,
+        description: `Scraping completed successfully`,
       });
     } catch (error) {
       console.error('Scraping error:', error);
@@ -107,14 +63,6 @@ export default function ZenScraper() {
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleExport = () => {
-    ZenScraperService.exportToExcel(sortedResults);
-    toast({
-      title: "Success",
-      description: `Exported ${results.length} items to Excel`,
-    });
   };
 
   return (
@@ -146,7 +94,7 @@ export default function ZenScraper() {
             {isLoading ? (
               <div className="flex items-center space-x-2">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span>Scraping page {currentPage}...</span>
+                <span>Scraping page...</span>
               </div>
             ) : (
               "Start Scraping"
@@ -156,69 +104,16 @@ export default function ZenScraper() {
       </Card>
 
       {results.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h2 className="text-lg font-semibold">
-              Results ({results.length} items from {scrapedPages} {scrapedPages === 1 ? 'page' : 'pages'})
-            </h2>
-            <Button onClick={handleExport} variant="outline">
-              <Download className="mr-2 h-4 w-4" />
-              Export to Excel
-            </Button>
-          </div>
-          
-          <div className="border rounded-lg">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort('title')}
-                  >
-                    Title {sortColumn === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort('currentPrice')}
-                  >
-                    Price {sortColumn === 'currentPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort('buyoutPrice')}
-                  >
-                    Buyout {sortColumn === 'buyoutPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort('bids')}
-                  >
-                    Bids {sortColumn === 'bids' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </TableHead>
-                  <TableHead>Categories</TableHead>
-                  <TableHead 
-                    className="cursor-pointer hover:bg-muted/50"
-                    onClick={() => handleSort('timeRemaining')}
-                  >
-                    Time Remaining {sortColumn === 'timeRemaining' && (sortDirection === 'asc' ? '↑' : '↓')}
-                  </TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {sortedResults.map((item, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{item.title}</TableCell>
-                    <TableCell>{item.currentPrice}</TableCell>
-                    <TableCell>{item.buyoutPrice || 'N/A'}</TableCell>
-                    <TableCell>{item.bids}</TableCell>
-                    <TableCell>{item.categories.join(', ')}</TableCell>
-                    <TableCell>{item.timeRemaining}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
-        </div>
+        <>
+          <FilterPanel
+            onFilterChange={setFilters}
+            currency="EUR"
+          />
+          <ResultsTable
+            results={results}
+            filters={filters}
+          />
+        </>
       )}
     </div>
   );
