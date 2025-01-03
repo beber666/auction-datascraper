@@ -20,9 +20,10 @@ export const AuctionRow = ({
     <TableRow className={item.isLoading ? "opacity-60" : ""}>
       <TableCell className="w-[100px]">
         {item.imageUrl && (
-          <div 
-            className="w-[100px] h-[80px] bg-center bg-cover rounded-md"
-            style={{ backgroundImage: `url('${item.imageUrl}')` }}
+          <img 
+            src={item.imageUrl}
+            alt={item.productName}
+            className="w-[100px] h-[80px] object-cover rounded-md"
           />
         )}
       </TableCell>
