@@ -20,7 +20,18 @@ export const useAuctions = (language: string, currency: string) => {
     const updatedItems = await Promise.all(
       items.map(async (item) => {
         try {
-          // Use handleUpdate instead of submitAuction for existing auctions
+          // Check if the auction still exists before updating
+          const { data: existingAuction } = await supabase
+            .from('auctions')
+            .select('id')
+            .eq('id', item.id)
+            .maybeSingle();
+
+          if (!existingAuction) {
+            console.log(`Auction ${item.id} no longer exists, skipping update`);
+            return null;
+          }
+
           const updatedItem = await handleUpdate(item);
           return updatedItem || item;
         } catch (error) {
@@ -30,7 +41,9 @@ export const useAuctions = (language: string, currency: string) => {
       })
     );
 
-    setItems(updatedItems);
+    // Filter out null values (deleted auctions) and update state
+    const filteredItems = updatedItems.filter(item => item !== null);
+    setItems(filteredItems);
     console.log('Auction refresh completed');
   }, [items, handleUpdate, setItems, loadUserAuctions]);
 
