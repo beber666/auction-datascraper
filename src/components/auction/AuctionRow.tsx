@@ -1,7 +1,7 @@
 import { AuctionItem } from "@/services/scraper";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
-import { AuctionActions } from "../AuctionActions";
+import { AuctionActions } from "@/components/AuctionActions";
 
 interface AuctionRowProps {
   item: AuctionItem;
