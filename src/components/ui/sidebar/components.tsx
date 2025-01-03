@@ -19,10 +19,14 @@ import { sidebarMenuButtonVariants } from "./variants";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "12rem"; // Modifié de 16rem à 12rem
-const SIDEBAR_WIDTH_MOBILE = "14rem"; // Modifié de 18rem à 14rem pour garder la proportion
+const SIDEBAR_WIDTH = "fit-content"; // Modifié pour s'adapter au contenu
+const SIDEBAR_WIDTH_MOBILE = "fit-content"; // Modifié pour s'adapter au contenu
+const SIDEBAR_MIN_WIDTH = "10rem"; // Ajout d'une largeur minimale
+const SIDEBAR_MAX_WIDTH = "16rem"; // Ajout d'une largeur maximale
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
+
+// ... keep existing code (all component definitions)
 
 const Sidebar = React.forwardRef<
   HTMLDivElement,
@@ -49,9 +53,13 @@ const Sidebar = React.forwardRef<
       return (
         <div
           className={cn(
-            "flex h-full w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
+            "flex h-full min-w-[--sidebar-min-width] max-w-[--sidebar-max-width] w-[--sidebar-width] flex-col bg-sidebar text-sidebar-foreground",
             className
           )}
+          style={{
+            "--sidebar-min-width": SIDEBAR_MIN_WIDTH,
+            "--sidebar-max-width": SIDEBAR_MAX_WIDTH,
+          } as React.CSSProperties}
           ref={ref}
           {...props}
         >
@@ -66,12 +74,11 @@ const Sidebar = React.forwardRef<
           <SheetContent
             data-sidebar="sidebar"
             data-mobile="true"
-            className="w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
-            style={
-              {
-                "--sidebar-width": SIDEBAR_WIDTH_MOBILE,
-              } as React.CSSProperties
-            }
+            className="min-w-[--sidebar-min-width] max-w-[--sidebar-max-width] w-[--sidebar-width] bg-sidebar p-0 text-sidebar-foreground [&>button]:hidden"
+            style={{
+              "--sidebar-min-width": SIDEBAR_MIN_WIDTH,
+              "--sidebar-max-width": SIDEBAR_MAX_WIDTH,
+            } as React.CSSProperties}
             side={side}
           >
             <div className="flex h-full w-full flex-col">{children}</div>
@@ -91,17 +98,21 @@ const Sidebar = React.forwardRef<
       >
         <div
           className={cn(
-            "duration-200 relative h-svh w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
+            "duration-200 relative h-svh min-w-[--sidebar-min-width] max-w-[--sidebar-max-width] w-[--sidebar-width] bg-transparent transition-[width] ease-linear",
             "group-data-[collapsible=offcanvas]:w-0",
             "group-data-[side=right]:rotate-180",
             variant === "floating" || variant === "inset"
               ? "group-data-[collapsible=icon]:w-[calc(var(--sidebar-width-icon)_+_theme(spacing.4))]"
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon]"
           )}
+          style={{
+            "--sidebar-min-width": SIDEBAR_MIN_WIDTH,
+            "--sidebar-max-width": SIDEBAR_MAX_WIDTH,
+          } as React.CSSProperties}
         />
         <div
           className={cn(
-            "duration-200 fixed inset-y-0 z-10 hidden h-svh w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
+            "duration-200 fixed inset-y-0 z-10 hidden h-svh min-w-[--sidebar-min-width] max-w-[--sidebar-max-width] w-[--sidebar-width] transition-[left,right,width] ease-linear md:flex",
             side === "left"
               ? "left-0 group-data-[collapsible=offcanvas]:left-[calc(var(--sidebar-width)*-1)]"
               : "right-0 group-data-[collapsible=offcanvas]:right-[calc(var(--sidebar-width)*-1)]",
@@ -110,6 +121,10 @@ const Sidebar = React.forwardRef<
               : "group-data-[collapsible=icon]:w-[--sidebar-width-icon] group-data-[side=left]:border-r group-data-[side=right]:border-l",
             className
           )}
+          style={{
+            "--sidebar-min-width": SIDEBAR_MIN_WIDTH,
+            "--sidebar-max-width": SIDEBAR_MAX_WIDTH,
+          } as React.CSSProperties}
           {...props}
         >
           <div
