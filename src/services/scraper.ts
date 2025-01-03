@@ -24,20 +24,34 @@ export class ScraperService {
   private static lastRatesFetch: Date | null = null;
 
   private static async fetchExchangeRates() {
-    if (
-      !this.exchangeRates ||
-      !this.lastRatesFetch ||
-      Date.now() - this.lastRatesFetch.getTime() > 3600000
-    ) {
-      const { supabase } = await import('@/integrations/supabase/client');
-      const { data, error } = await supabase.functions.invoke('get-exchange-rates');
-      
-      if (error) throw error;
-      
-      this.exchangeRates = data;
-      this.lastRatesFetch = new Date();
+    try {
+      if (
+        !this.exchangeRates ||
+        !this.lastRatesFetch ||
+        Date.now() - this.lastRatesFetch.getTime() > 3600000
+      ) {
+        console.log('Fetching fresh exchange rates...');
+        const { supabase } = await import('@/integrations/supabase/client');
+        const { data, error } = await supabase.functions.invoke('get-exchange-rates');
+        
+        if (error) {
+          console.error('Error fetching exchange rates:', error);
+          throw error;
+        }
+        
+        if (!data || !data.rates) {
+          throw new Error('Invalid exchange rate data received');
+        }
+        
+        this.exchangeRates = data;
+        this.lastRatesFetch = new Date();
+        console.log('Exchange rates updated successfully');
+      }
+      return this.exchangeRates;
+    } catch (error) {
+      console.error('Failed to fetch exchange rates:', error);
+      throw error;
     }
-    return this.exchangeRates;
   }
 
   static async translateText(text: string, targetLang: string): Promise<string> {
@@ -89,20 +103,26 @@ export class ScraperService {
   }
 
   static async convertPrice(priceInJPY: number, targetCurrency: string): Promise<string> {
-    const rates = await this.fetchExchangeRates();
-    if (!rates || !rates.rates[targetCurrency]) {
+    try {
+      const rates = await this.fetchExchangeRates();
+      if (!rates || !rates.rates[targetCurrency]) {
+        console.warn(`No rate found for ${targetCurrency}, falling back to JPY`);
+        return `${priceInJPY} ¥`;
+      }
+
+      const convertedPrice = priceInJPY * rates.rates[targetCurrency];
+      const currencySymbols: { [key: string]: string } = {
+        JPY: '¥',
+        EUR: '€',
+        USD: '$',
+        GBP: '£'
+      };
+
+      return `${currencySymbols[targetCurrency]}${convertedPrice.toFixed(2)}`;
+    } catch (error) {
+      console.error('Price conversion failed:', error);
       return `${priceInJPY} ¥`;
     }
-
-    const convertedPrice = priceInJPY * rates.rates[targetCurrency];
-    const currencySymbols: { [key: string]: string } = {
-      JPY: '¥',
-      EUR: '€',
-      USD: '$',
-      GBP: '£'
-    };
-
-    return `${currencySymbols[targetCurrency]}${convertedPrice.toFixed(2)}`;
   }
 
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {

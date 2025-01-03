@@ -12,18 +12,37 @@ serve(async (req) => {
   }
 
   try {
-    const { currency } = await req.json()
+    console.log('Fetching exchange rates from API...');
+    const response = await fetch('https://api.exchangerate-api.com/v4/latest/JPY', {
+      headers: {
+        'Accept': 'application/json'
+      }
+    });
     
-    const response = await fetch('https://api.exchangerate-api.com/v4/latest/JPY')
-    const data = await response.json()
+    if (!response.ok) {
+      throw new Error(`Exchange rate API responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    console.log('Successfully fetched exchange rates');
     
     return new Response(
       JSON.stringify(data),
-      { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      { 
+        headers: { 
+          ...corsHeaders, 
+          'Content-Type': 'application/json',
+          'Cache-Control': 'public, max-age=3600' 
+        } 
+      }
     )
   } catch (error) {
+    console.error('Error fetching exchange rates:', error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ 
+        error: error.message,
+        details: 'Failed to fetch exchange rates'
+      }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }

@@ -1,4 +1,4 @@
 project_id = "yssapojsghmotbifhybq"
 
-[translate-text]
+[get-exchange-rates]
 verify_jwt = false
