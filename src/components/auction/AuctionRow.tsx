@@ -16,6 +16,8 @@ export const AuctionRow = ({
   onToggleAlert,
   onDelete,
 }: AuctionRowProps) => {
+  console.log("Image URL for item:", item.id, item.imageUrl);
+
   return (
     <TableRow className={item.isLoading ? "opacity-60" : ""}>
       <TableCell className="w-[100px]">
@@ -24,6 +26,11 @@ export const AuctionRow = ({
             src={item.imageUrl}
             alt={item.productName}
             className="w-[100px] h-[80px] object-cover rounded-md"
+            onError={(e) => {
+              console.error("Error loading image:", item.imageUrl);
+              e.currentTarget.style.display = 'none';
+            }}
+            onLoad={() => console.log("Image loaded successfully:", item.imageUrl)}
           />
         )}
       </TableCell>
