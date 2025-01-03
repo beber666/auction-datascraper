@@ -18,10 +18,6 @@ export default {
 			}
 		},
 		extend: {
-			width: {
-				'sidebar': '14rem', // Reduced from 16rem to 14rem
-				'sidebar-collapsed': '3rem',
-			},
 			colors: {
 				border: 'hsl(var(--border))',
 				input: 'hsl(var(--input))',

@@ -16,22 +16,13 @@ export const AuctionRow = ({
   onToggleAlert,
   onDelete,
 }: AuctionRowProps) => {
-  console.log("Full item data:", item);
-  console.log("Image URL for item:", item.id, item.imageUrl);
-
   return (
     <TableRow className={item.isLoading ? "opacity-60" : ""}>
       <TableCell className="w-[100px]">
         {item.imageUrl && (
-          <img 
-            src={item.imageUrl}
-            alt={item.productName}
-            className="w-[100px] h-[80px] object-cover rounded-md"
-            onError={(e) => {
-              console.error("Error loading image:", item.imageUrl);
-              e.currentTarget.style.display = 'none';
-            }}
-            onLoad={() => console.log("Image loaded successfully:", item.imageUrl)}
+          <div 
+            className="w-[100px] h-[80px] bg-center bg-cover rounded-md"
+            style={{ backgroundImage: `url('${item.imageUrl}')` }}
           />
         )}
       </TableCell>

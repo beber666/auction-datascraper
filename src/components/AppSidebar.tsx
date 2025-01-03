@@ -38,7 +38,7 @@ export function AppSidebar() {
   const navigate = useNavigate();
 
   return (
-    <Sidebar className="w-sidebar">
+    <Sidebar>
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel>Navigation</SidebarGroupLabel>
