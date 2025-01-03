@@ -1,8 +1,4 @@
-import {
-  TableHead,
-  TableHeader as UITableHeader,
-  TableRow,
-} from "@/components/ui/table";
+import { TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { ScrapedItem } from "@/services/zenScraper";
 
 interface ResultsTableHeaderProps {
@@ -11,28 +7,18 @@ interface ResultsTableHeaderProps {
   onSort: (column: keyof ScrapedItem) => void;
 }
 
-export const ResultsTableHeader = ({ sortColumn, sortDirection, onSort }: ResultsTableHeaderProps) => {
+export const ResultsTableHeader = ({ 
+  sortColumn, 
+  sortDirection, 
+  onSort 
+}: ResultsTableHeaderProps) => {
   return (
-    <UITableHeader>
+    <TableHeader>
       <TableRow>
-        <TableHead 
-          className="cursor-pointer hover:bg-muted/50"
-          onClick={() => onSort('title')}
-        >
-          Title {sortColumn === 'title' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </TableHead>
-        <TableHead 
-          className="cursor-pointer hover:bg-muted/50"
-          onClick={() => onSort('currentPrice')}
-        >
-          Price {sortColumn === 'currentPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </TableHead>
-        <TableHead 
-          className="cursor-pointer hover:bg-muted/50"
-          onClick={() => onSort('buyoutPrice')}
-        >
-          Buyout {sortColumn === 'buyoutPrice' && (sortDirection === 'asc' ? '↑' : '↓')}
-        </TableHead>
+        <TableHead>Image</TableHead>
+        <TableHead>Product Name</TableHead>
+        <TableHead>Current Price</TableHead>
+        <TableHead>Buyout Price</TableHead>
         <TableHead 
           className="cursor-pointer hover:bg-muted/50"
           onClick={() => onSort('bids')}
@@ -45,8 +31,8 @@ export const ResultsTableHeader = ({ sortColumn, sortDirection, onSort }: Result
         >
           Time Remaining {sortColumn === 'timeRemaining' && (sortDirection === 'asc' ? '↑' : '↓')}
         </TableHead>
-        <TableHead>Actions</TableHead>
+        <TableHead className="text-right">Actions</TableHead>
       </TableRow>
-    </UITableHeader>
+    </TableHeader>
   );
 };
