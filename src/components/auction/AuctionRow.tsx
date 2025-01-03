@@ -1,7 +1,7 @@
 import { AuctionItem } from "@/services/scraper";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Loader2 } from "lucide-react";
-import { AuctionActions } from "./AuctionActions";
+import { AuctionActions } from "../AuctionActions";
 
 interface AuctionRowProps {
   item: AuctionItem;
@@ -16,6 +16,7 @@ export const AuctionRow = ({
   onToggleAlert,
   onDelete,
 }: AuctionRowProps) => {
+  console.log("Full item data:", item);
   console.log("Image URL for item:", item.id, item.imageUrl);
 
   return (
