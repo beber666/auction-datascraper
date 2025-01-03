@@ -115,7 +115,8 @@ export const useAuctionMutations = (language: string, currency: string) => {
           number_of_bids: scrapedItem.numberOfBids,
           time_remaining: scrapedItem.timeRemaining,
           last_updated: new Date().toISOString(),
-          end_time: endTime?.toISOString()
+          end_time: endTime?.toISOString(),
+          image_url: scrapedItem.imageUrl // Ajout de l'URL de l'image dans la mise à jour
         })
         .eq('id', item.id)
         .select()
@@ -130,7 +131,8 @@ export const useAuctionMutations = (language: string, currency: string) => {
           priceInJPY: updatedItem.price_in_jpy,
           numberOfBids: updatedItem.number_of_bids,
           timeRemaining: updatedItem.time_remaining,
-          lastUpdated: new Date(updatedItem.last_updated)
+          lastUpdated: new Date(updatedItem.last_updated),
+          imageUrl: updatedItem.image_url // Ajout de l'URL de l'image dans l'objet retourné
         };
       }
 
