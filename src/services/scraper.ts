@@ -29,8 +29,12 @@ export class ScraperService {
       !this.lastRatesFetch ||
       Date.now() - this.lastRatesFetch.getTime() > 3600000
     ) {
-      const response = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
-      this.exchangeRates = await response.json();
+      const { supabase } = await import('@/integrations/supabase/client');
+      const { data, error } = await supabase.functions.invoke('get-exchange-rates');
+      
+      if (error) throw error;
+      
+      this.exchangeRates = data;
       this.lastRatesFetch = new Date();
     }
     return this.exchangeRates;
@@ -58,16 +62,12 @@ export class ScraperService {
         return text;
       }
 
-      // For English translations, use 'en-US' instead of just 'en'
-      const normalizedTargetLang = targetLang.toLowerCase() === 'en' ? 'en-US' : targetLang.toLowerCase();
-      console.log('Using target language code:', normalizedTargetLang);
-
       const { supabase } = await import('@/integrations/supabase/client');
       
       const { data, error } = await supabase.functions.invoke('translate-text', {
         body: { 
           text,
-          targetLang: normalizedTargetLang 
+          targetLang: targetLang.toLowerCase() === 'en' ? 'en-US' : targetLang.toLowerCase() 
         }
       });
 
@@ -81,17 +81,9 @@ export class ScraperService {
         return text;
       }
 
-      const translatedText = data.translatedText;
-      console.log('Translation successful:', {
-        original: text,
-        translated: translatedText,
-        targetLang: normalizedTargetLang
-      });
-
-      return translatedText;
+      return data.translatedText;
     } catch (error) {
       console.error('Translation error:', error);
-      // Return original text if translation fails
       return text;
     }
   }
