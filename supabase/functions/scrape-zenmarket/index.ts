@@ -46,17 +46,14 @@ serve(async (req) => {
     const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0'
     const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A'
     
-    // Extract image URL from the background-image style
+    // Extract image URL from the img tag
     let imageUrl = null;
-    const imageDiv = doc.querySelector('#imgPreview');
-    if (imageDiv) {
-      const style = imageDiv.getAttribute('style');
-      if (style) {
-        const match = style.match(/url\(['"]?(.*?)['"]?\)/);
-        if (match && match[1]) {
-          imageUrl = match[1];
-        }
-      }
+    const imgElement = doc.querySelector('#imgPreview');
+    if (imgElement) {
+      imageUrl = imgElement.getAttribute('src');
+      console.log('Found image URL:', imageUrl);
+    } else {
+      console.log('No image element found with id imgPreview');
     }
 
     console.log('Scraped data:', {
