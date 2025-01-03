@@ -19,8 +19,8 @@ import { sidebarMenuButtonVariants } from "./variants";
 
 const SIDEBAR_COOKIE_NAME = "sidebar:state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
-const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "18rem";
+const SIDEBAR_WIDTH = "12rem"; // Modifié de 16rem à 12rem
+const SIDEBAR_WIDTH_MOBILE = "14rem"; // Modifié de 18rem à 14rem pour garder la proportion
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
