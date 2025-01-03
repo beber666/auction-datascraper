@@ -45,7 +45,7 @@ export const DeleteAllButton = ({ onDeleteAll, itemIds }: DeleteAllButtonProps) 
         console.error('Error clearing auction alerts:', alertError);
       }
 
-      // Update local state
+      // Update local state AFTER successful deletion
       onDeleteAll(itemIds);
       
       toast({
