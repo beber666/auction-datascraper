@@ -135,10 +135,26 @@ export const AuctionTable = ({ items, onDelete }: AuctionTableProps) => {
     if (!session) return;
 
     try {
-      // Delete all auctions for the current user
-      for (const item of items) {
-        await onDelete(item.id);
+      // Delete all auctions in a single query
+      const { error } = await supabase
+        .from('auctions')
+        .delete()
+        .eq('user_id', session.user.id);
+
+      if (error) throw error;
+
+      // Clear alerts associated with deleted auctions
+      const { error: alertError } = await supabase
+        .from('auction_alerts')
+        .delete()
+        .eq('user_id', session.user.id);
+
+      if (alertError) {
+        console.error('Error clearing auction alerts:', alertError);
       }
+
+      // Update local state by clearing all items
+      items.forEach(item => onDelete(item.id));
       
       toast({
         title: "Succès",
