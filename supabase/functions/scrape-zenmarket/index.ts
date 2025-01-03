@@ -45,7 +45,19 @@ serve(async (req) => {
     const priceInJPY = parseInt(priceText.replace(/[^0-9]/g, ''))
     const numberOfBids = doc.querySelector('#bidNum')?.textContent?.trim() || '0'
     const timeRemaining = doc.querySelector('#lblTimeLeft')?.textContent?.trim() || 'N/A'
-    const imageUrl = doc.querySelector('#imgPreview')?.getAttribute('src') || null
+    
+    // Extract image URL from the background-image style
+    let imageUrl = null;
+    const imageDiv = doc.querySelector('#imgPreview');
+    if (imageDiv) {
+      const style = imageDiv.getAttribute('style');
+      if (style) {
+        const match = style.match(/url\(['"]?(.*?)['"]?\)/);
+        if (match && match[1]) {
+          imageUrl = match[1];
+        }
+      }
+    }
 
     console.log('Scraped data:', {
       productName,

@@ -18,6 +18,14 @@ export const AuctionRow = ({
 }: AuctionRowProps) => {
   return (
     <TableRow className={item.isLoading ? "opacity-60" : ""}>
+      <TableCell className="w-[100px]">
+        {item.imageUrl && (
+          <div 
+            className="w-[100px] h-[80px] bg-center bg-cover rounded-md"
+            style={{ backgroundImage: `url('${item.imageUrl}')` }}
+          />
+        )}
+      </TableCell>
       <TableCell className="font-medium">
         {item.isLoading ? (
           <div className="flex items-center gap-2">
