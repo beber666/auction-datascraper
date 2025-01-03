@@ -11,19 +11,6 @@ interface TableRowProps {
 export const TableRow = ({ item, onAddToTracker }: TableRowProps) => {
   return (
     <UITableRow>
-      <TableCell>
-        {item.imageUrl ? (
-          <img 
-            src={item.imageUrl} 
-            alt={item.title}
-            className="w-[100px] h-[80px] object-cover rounded-md"
-          />
-        ) : (
-          <div className="w-[100px] h-[80px] bg-muted rounded-md flex items-center justify-center text-muted-foreground text-sm">
-            No image
-          </div>
-        )}
-      </TableCell>
       <TableCell className="font-medium">
         <a 
           href={item.url} 
