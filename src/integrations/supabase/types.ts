@@ -124,6 +124,8 @@ export type Database = {
           preferred_currency: string | null
           preferred_language: string | null
           refresh_interval: number | null
+          sort_column: string | null
+          sort_direction: string | null
         }
         Insert: {
           auto_refresh?: boolean | null
@@ -135,6 +137,8 @@ export type Database = {
           preferred_currency?: string | null
           preferred_language?: string | null
           refresh_interval?: number | null
+          sort_column?: string | null
+          sort_direction?: string | null
         }
         Update: {
           auto_refresh?: boolean | null
@@ -146,6 +150,8 @@ export type Database = {
           preferred_currency?: string | null
           preferred_language?: string | null
           refresh_interval?: number | null
+          sort_column?: string | null
+          sort_direction?: string | null
         }
         Relationships: []
       }
