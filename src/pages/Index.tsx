@@ -7,6 +7,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { SettingsPanel } from "@/components/SettingsPanel";
 import { useAuctions } from "@/hooks/useAuctions";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { BulkImportDialog } from "@/components/auction/BulkImportDialog";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -29,7 +30,8 @@ const Index = () => {
     handleDelete,
     loadUserAuctions,
     refreshAuctions,
-    refreshIntervalRef
+    refreshIntervalRef,
+    handleBulkImport
   } = useAuctions(language, currency);
 
   // Initial load of user data
@@ -96,7 +98,12 @@ const Index = () => {
           onCurrencyChange={handleCurrencyChange}
           onLanguageChange={handleLanguageChange}
         />
-        <UrlForm onSubmit={handleSubmit} isLoading={isLoading} />
+        <div className="flex gap-4 items-start">
+          <div className="flex-1">
+            <UrlForm onSubmit={handleSubmit} isLoading={isLoading} />
+          </div>
+          <BulkImportDialog onImport={handleBulkImport} isLoading={isLoading} />
+        </div>
         {items.length > 0 ? (
           <AuctionTable items={items} onDelete={handleDelete} />
         ) : (

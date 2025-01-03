@@ -54,6 +54,21 @@ export const useAuctions = (language: string, currency: string) => {
     }
   };
 
+  const handleBulkImport = async (urls: string[]) => {
+    const newItems = [];
+    for (const url of urls) {
+      try {
+        const newItem = await submitAuction(url);
+        if (newItem) {
+          newItems.push(newItem);
+        }
+      } catch (error) {
+        console.error(`Error importing auction ${url}:`, error);
+      }
+    }
+    setItems(prev => [...prev, ...newItems]);
+  };
+
   // Cleanup function to clear the interval
   useEffect(() => {
     return () => {
@@ -71,6 +86,7 @@ export const useAuctions = (language: string, currency: string) => {
     handleDelete,
     loadUserAuctions,
     refreshAuctions,
-    refreshIntervalRef
+    refreshIntervalRef,
+    handleBulkImport
   };
 };
