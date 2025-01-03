@@ -9,6 +9,7 @@ export interface ScrapedItem {
   categories: string[];
   currentPrice: string;
   buyoutPrice: string | null;
+  imageUrl: string | null;
 }
 
 interface ScrapeResponse {
@@ -50,7 +51,8 @@ export class ZenScraperService {
       'Time Remaining': item.timeRemaining,
       'Current Price': item.currentPrice,
       'Buyout Price': item.buyoutPrice || 'N/A',
-      Categories: item.categories.join(', ')
+      Categories: item.categories.join(', '),
+      'Image URL': item.imageUrl || 'N/A'
     })));
 
     const workbook = XLSX.utils.book_new();

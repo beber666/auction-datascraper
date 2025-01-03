@@ -10,6 +10,7 @@ interface ScrapedItem {
   categories: string[];
   currentPrice: string;
   buyoutPrice: string | null;
+  imageUrl: string | null;
 }
 
 async function scrapePage(url: string): Promise<{ 
@@ -43,6 +44,9 @@ async function scrapePage(url: string): Promise<{
         return;
       }
 
+      // Get image URL from the previous column
+      const imageUrl = $el.prev('.col-md-2.img-wrap').find('img').attr('src') || null;
+
       // Get bids count with improved parsing
       const bidsEl = $el.find('.label.label-default.auction-label');
       const bidsText = bidsEl.text().trim();
@@ -59,7 +63,7 @@ async function scrapePage(url: string): Promise<{
         .find('a.auction-url')
         .map((_, link) => $(link).text().trim())
         .get()
-        .filter(cat => cat.length > 0); // Filter out empty categories
+        .filter(cat => cat.length > 0);
 
       if (categories.length === 0) {
         console.log('Warning: No categories found for item:', title);
@@ -83,7 +87,8 @@ async function scrapePage(url: string): Promise<{
         title,
         bids,
         categories: categories.length,
-        currentPrice
+        currentPrice,
+        imageUrl
       });
 
       // Add the item to our results
@@ -94,7 +99,8 @@ async function scrapePage(url: string): Promise<{
         timeRemaining,
         categories: categories.length > 0 ? categories : ['Non catégorisé'],
         currentPrice,
-        buyoutPrice
+        buyoutPrice,
+        imageUrl
       });
     } catch (error) {
       console.error('Error scraping individual item:', error);

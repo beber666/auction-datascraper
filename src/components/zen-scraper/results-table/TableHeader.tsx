@@ -15,6 +15,7 @@ export const ResultsTableHeader = ({ sortColumn, sortDirection, onSort }: Result
   return (
     <UITableHeader>
       <TableRow>
+        <TableHead>Image</TableHead>
         <TableHead 
           className="cursor-pointer hover:bg-muted/50"
           onClick={() => onSort('title')}
