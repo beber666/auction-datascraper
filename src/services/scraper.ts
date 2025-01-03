@@ -23,55 +23,17 @@ export class ScraperService {
   private static exchangeRates: ExchangeRates | null = null;
   private static lastRatesFetch: Date | null = null;
 
-  private static async fetchExchangeRates(currency: string) {
-    try {
-      const { supabase } = await import('@/integrations/supabase/client');
-      
-      const { data, error } = await supabase.functions.invoke('get-exchange-rates', {
-        body: { currency }
-      });
-
-      if (error) {
-        console.error('Error fetching exchange rates:', error);
-        throw error;
-      }
-
-      return data;
-    } catch (error) {
-      console.error('Error in fetchExchangeRates:', error);
-      throw error;
+  private static async fetchExchangeRates() {
+    if (
+      !this.exchangeRates ||
+      !this.lastRatesFetch ||
+      Date.now() - this.lastRatesFetch.getTime() > 3600000
+    ) {
+      const response = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
+      this.exchangeRates = await response.json();
+      this.lastRatesFetch = new Date();
     }
-  }
-
-  static async convertPrice(priceInJPY: number, targetCurrency: string): Promise<string> {
-    try {
-      if (
-        !this.exchangeRates ||
-        !this.lastRatesFetch ||
-        Date.now() - this.lastRatesFetch.getTime() > 3600000
-      ) {
-        const data = await this.fetchExchangeRates('JPY');
-        this.exchangeRates = data;
-        this.lastRatesFetch = new Date();
-      }
-
-      if (!this.exchangeRates || !this.exchangeRates.rates[targetCurrency]) {
-        return `${priceInJPY} ¥`;
-      }
-
-      const convertedPrice = priceInJPY * this.exchangeRates.rates[targetCurrency];
-      const currencySymbols: { [key: string]: string } = {
-        JPY: '¥',
-        EUR: '€',
-        USD: '$',
-        GBP: '£'
-      };
-
-      return `${currencySymbols[targetCurrency]}${convertedPrice.toFixed(2)}`;
-    } catch (error) {
-      console.error('Error converting price:', error);
-      return `${priceInJPY} ¥`;
-    }
+    return this.exchangeRates;
   }
 
   static async translateText(text: string, targetLang: string): Promise<string> {
@@ -132,6 +94,23 @@ export class ScraperService {
       // Return original text if translation fails
       return text;
     }
+  }
+
+  static async convertPrice(priceInJPY: number, targetCurrency: string): Promise<string> {
+    const rates = await this.fetchExchangeRates();
+    if (!rates || !rates.rates[targetCurrency]) {
+      return `${priceInJPY} ¥`;
+    }
+
+    const convertedPrice = priceInJPY * rates.rates[targetCurrency];
+    const currencySymbols: { [key: string]: string } = {
+      JPY: '¥',
+      EUR: '€',
+      USD: '$',
+      GBP: '£'
+    };
+
+    return `${currencySymbols[targetCurrency]}${convertedPrice.toFixed(2)}`;
   }
 
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
