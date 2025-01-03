@@ -12,19 +12,25 @@ export interface AuctionItem {
   user_id: string;
   created_at: string;
   imageUrl?: string;
-  isLoading?: boolean;  // Added this property
+  isLoading?: boolean;
 }
 
 export class ScraperService {
   static async scrapeZenmarket(url: string): Promise<AuctionItem> {
     try {
-      const { supabase } = await import('@/integrations/supabase/client');
+      console.log('Scraping URL:', url);
       const { data, error } = await supabase.functions.invoke('scrape-zenmarket', {
         body: { url }
       });
 
-      if (error) throw error;
-      if (!data) throw new Error('No data returned from scraper');
+      if (error) {
+        console.error('Scraping error:', error);
+        throw error;
+      }
+      if (!data) {
+        console.error('No data returned from scraper');
+        throw new Error('No data returned from scraper');
+      }
 
       const imageUrl = data.image_url || null;
       console.log('Scraped image URL:', imageUrl);
@@ -51,12 +57,19 @@ export class ScraperService {
 
   static async convertPrice(priceInJPY: number, targetCurrency: string): Promise<string> {
     try {
+      console.log('Converting price:', priceInJPY, 'to', targetCurrency);
       const { data, error } = await supabase.functions.invoke('get-exchange-rates', {
         body: { amount: priceInJPY, from: 'JPY', to: targetCurrency }
       });
 
-      if (error) throw error;
-      if (!data) throw new Error('No exchange rate data returned');
+      if (error) {
+        console.error('Price conversion error:', error);
+        throw error;
+      }
+      if (!data) {
+        console.error('No exchange rate data returned');
+        throw new Error('No exchange rate data returned');
+      }
 
       return data.convertedAmount.toFixed(2) + ' ' + targetCurrency;
     } catch (error) {

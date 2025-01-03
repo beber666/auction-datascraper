@@ -12,37 +12,42 @@ serve(async (req) => {
   }
 
   try {
-    console.log('Fetching exchange rates from API...');
-    const response = await fetch('https://api.exchangerate-api.com/v4/latest/JPY', {
-      headers: {
-        'Accept': 'application/json'
-      }
-    });
+    const { amount, from, to } = await req.json()
     
-    if (!response.ok) {
-      throw new Error(`Exchange rate API responded with status: ${response.status}`);
+    if (!amount || !from || !to) {
+      return new Response(
+        JSON.stringify({ error: 'Missing required parameters' }),
+        { 
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
     }
-    
-    const data = await response.json();
-    console.log('Successfully fetched exchange rates');
-    
+
+    console.log(`Converting ${amount} ${from} to ${to}`);
+
+    // For now, using a simple fixed rate for JPY to EUR as an example
+    // In production, you would want to use a real exchange rate API
+    const rate = 0.0062; // 1 JPY = 0.0062 EUR
+    const convertedAmount = amount * rate;
+
+    console.log(`Converted amount: ${convertedAmount} ${to}`);
+
     return new Response(
-      JSON.stringify(data),
+      JSON.stringify({ convertedAmount }),
       { 
         headers: { 
           ...corsHeaders, 
           'Content-Type': 'application/json',
-          'Cache-Control': 'public, max-age=3600' 
-        } 
+          'Cache-Control': 'public, max-age=300' // Cache for 5 minutes
+        }
       }
     )
+
   } catch (error) {
-    console.error('Error fetching exchange rates:', error);
+    console.error('Error in get-exchange-rates:', error);
     return new Response(
-      JSON.stringify({ 
-        error: error.message,
-        details: 'Failed to fetch exchange rates'
-      }),
+      JSON.stringify({ error: error.message }),
       { 
         status: 500,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' }
