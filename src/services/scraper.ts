@@ -12,6 +12,7 @@ export interface AuctionItem {
   user_id: string;
   created_at: string;
   imageUrl?: string;
+  isLoading?: boolean;  // Added this property
 }
 
 export class ScraperService {
@@ -39,11 +40,28 @@ export class ScraperService {
         lastUpdated: new Date(),
         user_id: '',  // will be set by database
         created_at: new Date().toISOString(),
-        imageUrl: imageUrl
+        imageUrl: imageUrl,
+        isLoading: false
       };
     } catch (error) {
       console.error('Error scraping auction:', error);
       throw new Error('Failed to scrape auction data');
+    }
+  }
+
+  static async convertPrice(priceInJPY: number, targetCurrency: string): Promise<string> {
+    try {
+      const { data, error } = await supabase.functions.invoke('get-exchange-rates', {
+        body: { amount: priceInJPY, from: 'JPY', to: targetCurrency }
+      });
+
+      if (error) throw error;
+      if (!data) throw new Error('No exchange rate data returned');
+
+      return data.convertedAmount.toFixed(2) + ' ' + targetCurrency;
+    } catch (error) {
+      console.error('Error converting price:', error);
+      return priceInJPY + ' JPY'; // Fallback to JPY if conversion fails
     }
   }
 }
