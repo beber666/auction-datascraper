@@ -99,52 +99,54 @@ export const NewPackageForm = () => {
           />
         </div>
 
-        <div className="rounded-md border">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Lien produit</TableHead>
-                <TableHead>ID plateforme</TableHead>
-                <TableHead className="text-right">Frais proxy</TableHead>
-                <TableHead className="text-right">Prix</TableHead>
-                <TableHead className="text-right">Envoi local</TableHead>
-                <TableHead className="text-right">Poids (kg)</TableHead>
-                <TableHead className="text-right">Part envoi int.</TableHead>
-                <TableHead className="text-right">Part douane</TableHead>
-                <TableHead className="text-right">Prix total</TableHead>
-                <TableHead className="text-right">Prix revente</TableHead>
-                <TableHead>Commentaire</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {mockItems.map((item) => (
-                <TableRow key={item.id}>
-                  <TableCell>{item.name}</TableCell>
-                  <TableCell>
-                    <a
-                      href={item.productUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
-                    >
-                      Voir
-                    </a>
-                  </TableCell>
-                  <TableCell>{item.platformId}</TableCell>
-                  <TableCell className="text-right">{formatAmount(item.proxyFee)}</TableCell>
-                  <TableCell className="text-right">{formatAmount(item.price)}</TableCell>
-                  <TableCell className="text-right">{formatAmount(item.localShippingPrice)}</TableCell>
-                  <TableCell className="text-right">{item.weight}</TableCell>
-                  <TableCell className="text-right">{formatAmount(item.internationalShippingShare)}</TableCell>
-                  <TableCell className="text-right">{formatAmount(item.customsFee)}</TableCell>
-                  <TableCell className="text-right">{formatAmount(item.totalPrice)}</TableCell>
-                  <TableCell className="text-right">{formatAmount(item.resalePrice)}</TableCell>
-                  <TableCell>{item.resaleComment}</TableCell>
+        <div className="overflow-auto rounded-md border">
+          <div className="min-w-[1200px]">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="min-w-[200px]">Nom</TableHead>
+                  <TableHead className="min-w-[80px]">Lien produit</TableHead>
+                  <TableHead className="min-w-[120px]">ID plateforme</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Frais proxy</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Prix</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Envoi local</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Poids (kg)</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Part envoi int.</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Part douane</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Prix total</TableHead>
+                  <TableHead className="text-right min-w-[100px]">Prix revente</TableHead>
+                  <TableHead className="min-w-[200px]">Commentaire</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {mockItems.map((item) => (
+                  <TableRow key={item.id}>
+                    <TableCell>{item.name}</TableCell>
+                    <TableCell>
+                      <a
+                        href={item.productUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-blue-500 hover:underline"
+                      >
+                        Voir
+                      </a>
+                    </TableCell>
+                    <TableCell>{item.platformId}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.proxyFee)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.price)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.localShippingPrice)}</TableCell>
+                    <TableCell className="text-right">{item.weight}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.internationalShippingShare)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.customsFee)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.totalPrice)}</TableCell>
+                    <TableCell className="text-right">{formatAmount(item.resalePrice)}</TableCell>
+                    <TableCell>{item.resaleComment}</TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
         </div>
 
         <Button className="w-full">+ Ajouter un article</Button>
