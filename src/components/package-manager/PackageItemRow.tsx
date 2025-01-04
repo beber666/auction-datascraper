@@ -32,7 +32,7 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: Packa
 
   const handleNumberChange = (field: keyof PackageItem, value: string) => {
     const numValue = value === '' ? 0 : parseFloat(value);
-    if (!isNaN(numValue)) {
+    if (!isNaN(numValue) && numValue >= 0) { // Added check for non-negative values
       onUpdate(item.id, field, numValue);
     }
   };
@@ -47,6 +47,7 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: Packa
         <Input 
           type={type}
           value={value}
+          min={type === "number" ? "0" : undefined} // Added min attribute for number inputs
           onChange={(e) => type === "number" 
             ? handleNumberChange(field, e.target.value)
             : onUpdate(item.id, field, e.target.value)
