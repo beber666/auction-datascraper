@@ -22,66 +22,22 @@ serve(async (req) => {
 
     console.log('Fetching tracking info for:', trackingNumber);
 
-    // Generate a random X-CSRF-Token
-    const xcsrfToken = Array.from(crypto.getRandomValues(new Uint8Array(32)))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-
-    // First, make a request to get cookies
-    const initialResponse = await fetch(`https://t.17track.net/en#nums=${trackingNumber}`, {
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Cache-Control': 'no-cache',
-        'Pragma': 'no-cache',
-        'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"macOS"',
-        'Sec-Fetch-Dest': 'document',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-User': '?1',
-        'Upgrade-Insecure-Requests': '1',
-      }
-    });
-
-    // Get cookies from the initial response
-    const cookies = initialResponse.headers.get('set-cookie');
-
-    // Wait a bit to simulate human behavior
-    await new Promise(resolve => setTimeout(resolve, 2000));
-
-    const response = await fetch(`https://t.17track.net/restapi/track`, {
+    // Using 17track's mobile API endpoint
+    const response = await fetch(`https://api.17track.net/track/v1/gettrackinfo`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'application/json, text/javascript, */*; q=0.01',
-        'Accept-Language': 'fr-FR,fr;q=0.9,en-US;q=0.8,en;q=0.7',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'X-CSRF-Token': xcsrfToken,
-        'X-Requested-With': 'XMLHttpRequest',
-        'Origin': 'https://t.17track.net',
-        'Referer': `https://t.17track.net/en#nums=${trackingNumber}`,
-        'Sec-Fetch-Dest': 'empty',
-        'Sec-Fetch-Mode': 'cors',
-        'Sec-Fetch-Site': 'same-origin',
-        'Sec-Ch-Ua': '"Not A(Brand";v="99", "Google Chrome";v="121", "Chromium";v="121"',
-        'Sec-Ch-Ua-Mobile': '?0',
-        'Sec-Ch-Ua-Platform': '"macOS"',
-        'Connection': 'keep-alive',
-        'Cookie': cookies || '',
+        'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+        'Accept': 'application/json',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Origin': 'https://m.17track.net',
+        'Referer': 'https://m.17track.net/',
       },
       body: JSON.stringify({
-        "data": [{
-          "num": trackingNumber,
-          "fc": 0,
-          "sc": 0
-        }],
-        "guid": "",
-        "timeZoneOffset": -60
+        "numbers": [trackingNumber],
+        "timeZoneOffset": -480,
+        "platform": "ios",
+        "uniqueId": crypto.randomUUID()
       })
     });
 
@@ -91,17 +47,17 @@ serve(async (req) => {
     }
 
     const data = await response.json();
-    console.log('17track API response:', data);
+    console.log('17track mobile API response:', data);
 
-    if (!data.ret || data.ret === -8 || !data.dat?.[0]?.track?.z0) {
+    if (!data.data?.[0]?.track) {
       console.error('Invalid tracking data received:', data);
       throw new Error('No tracking data found');
     }
 
     // Transform the tracking events into our format
-    const trackingInfo = data.dat[0].track.z0.map(event => ({
-      time: new Date(event.a * 1000).toLocaleString(),
-      event: event.z
+    const trackingInfo = data.data[0].track.map(event => ({
+      time: new Date(event.time * 1000).toLocaleString(),
+      event: event.description
     }));
 
     console.log('Transformed tracking events:', trackingInfo);
