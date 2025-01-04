@@ -12,10 +12,15 @@ interface PackageItemRowProps {
   isEditing: boolean;
 }
 
-export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditing }: PackageItemRowProps) => {
+export const PackageItemRow = ({ 
+  item, 
+  onDelete, 
+  onUpdate, 
+  formatAmount, 
+  isEditing 
+}: PackageItemRowProps) => {
   const [isRowEditing, setIsRowEditing] = useState(false);
 
-  // Set isRowEditing to true if this is a new item (all fields empty)
   useEffect(() => {
     const isNewItem = !item.name && !item.productUrl && !item.platformId && 
                      item.proxyFee === 0 && item.price === 0 && item.localShippingPrice === 0 &&
@@ -26,17 +31,11 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditi
     }
   }, [item, isEditing]);
 
-  // Reset row editing state when global editing state changes
   useEffect(() => {
     if (!isEditing) {
       setIsRowEditing(false);
     }
   }, [isEditing]);
-
-  const calculateTotalPrice = (item: PackageItem) => {
-    return item.proxyFee + item.price + item.localShippingPrice + 
-           item.internationalShippingShare + item.customsFee;
-  };
 
   const handleNumberChange = (field: keyof PackageItem, value: string) => {
     const numValue = value === '' ? 0 : parseFloat(value);
@@ -45,17 +44,7 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditi
     }
   };
 
-  const renderEditableField = (
-    field: keyof PackageItem,
-    value: string | number,
-    type: "text" | "number" = "text",
-    isTotal: boolean = false
-  ) => {
-    // Si c'est un total, on ne rend jamais le champ éditable
-    if (isTotal) {
-      return type === "number" ? formatAmount(value as number) : value;
-    }
-
+  const renderField = (field: keyof PackageItem, value: string | number, type: "text" | "number" = "text") => {
     if ((isRowEditing || isEditing) && isEditing) {
       return (
         <Input 
@@ -70,41 +59,44 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditi
         />
       );
     }
-    // Special handling for weight field
+    
     if (field === 'weight') {
       return `${value}g`;
     }
     return type === "number" ? formatAmount(value as number) : value;
   };
 
+  const totalPrice = item.proxyFee + item.price + item.localShippingPrice + 
+                    item.internationalShippingShare + item.customsFee;
+
   return (
     <TableRow>
-      <TableCell>{renderEditableField('name', item.name)}</TableCell>
-      <TableCell>{renderEditableField('productUrl', item.productUrl)}</TableCell>
-      <TableCell>{renderEditableField('platformId', item.platformId)}</TableCell>
+      <TableCell>{renderField('name', item.name)}</TableCell>
+      <TableCell>{renderField('productUrl', item.productUrl)}</TableCell>
+      <TableCell>{renderField('platformId', item.platformId)}</TableCell>
       <TableCell className="text-right">
-        {renderEditableField('proxyFee', item.proxyFee, "number")}
+        {renderField('proxyFee', item.proxyFee, "number")}
       </TableCell>
       <TableCell className="text-right">
-        {renderEditableField('price', item.price, "number")}
+        {renderField('price', item.price, "number")}
       </TableCell>
       <TableCell className="text-right">
-        {renderEditableField('localShippingPrice', item.localShippingPrice, "number")}
+        {renderField('localShippingPrice', item.localShippingPrice, "number")}
       </TableCell>
       <TableCell className="text-right">
-        {renderEditableField('weight', item.weight, "number")}
+        {renderField('weight', item.weight, "number")}
       </TableCell>
       <TableCell className="text-right">
-        {renderEditableField('internationalShippingShare', item.internationalShippingShare, "number")}
+        {renderField('internationalShippingShare', item.internationalShippingShare, "number")}
       </TableCell>
       <TableCell className="text-right">
-        {renderEditableField('customsFee', item.customsFee, "number")}
+        {renderField('customsFee', item.customsFee, "number")}
       </TableCell>
-      <TableCell className="text-right">{renderEditableField('totalPrice', calculateTotalPrice(item), "number", true)}</TableCell>
+      <TableCell className="text-right">{formatAmount(totalPrice)}</TableCell>
       <TableCell className="text-right">
-        {renderEditableField('resalePrice', item.resalePrice, "number")}
+        {renderField('resalePrice', item.resalePrice, "number")}
       </TableCell>
-      <TableCell>{renderEditableField('resaleComment', item.resaleComment)}</TableCell>
+      <TableCell>{renderField('resaleComment', item.resaleComment)}</TableCell>
       <TableCell>
         <PackageItemActions
           isEditing={isRowEditing && isEditing}
