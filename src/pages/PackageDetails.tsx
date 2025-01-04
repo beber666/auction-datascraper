@@ -6,7 +6,7 @@ const PackageDetails = () => {
   
   return (
     <div className="w-full">
-      <NewPackageForm packageId={id} />
+      <NewPackageForm currentPackageId={id || null} />
     </div>
   );
 };

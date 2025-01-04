@@ -1,5 +1,5 @@
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { PackageItemsTable } from "./PackageItemsTable";
 import { usePackageItems } from "@/hooks/usePackageItems";
@@ -10,16 +10,32 @@ import { PackageDetailsForm } from "./PackageDetailsForm";
 import { usePackages } from "@/hooks/usePackages";
 import { toast } from "sonner";
 
-export const NewPackageForm = () => {
+interface NewPackageFormProps {
+  currentPackageId: string | null;
+}
+
+export const NewPackageForm = ({ currentPackageId: initialPackageId }: NewPackageFormProps) => {
   const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(true);
+  const [isEditing, setIsEditing] = useState(!initialPackageId);
   const [packageName, setPackageName] = useState("");
   const [sendDate, setSendDate] = useState<Date>();
   const [trackingNumber, setTrackingNumber] = useState("");
-  const { createPackage } = usePackages();
-  const [currentPackageId, setCurrentPackageId] = useState<string | null>(null);
+  const { createPackage, packages } = usePackages();
+  const [currentPackageId, setCurrentPackageId] = useState<string | null>(initialPackageId);
   const { items, isLoading, addItem, updateItem, deleteItem } = usePackageItems(currentPackageId);
   const { formatAmount } = useAmountFormatter();
+
+  // Load existing package data when editing
+  useEffect(() => {
+    if (initialPackageId && packages) {
+      const existingPackage = packages.find(p => p.id === initialPackageId);
+      if (existingPackage) {
+        setPackageName(existingPackage.name);
+        setSendDate(existingPackage.send_date ? new Date(existingPackage.send_date) : undefined);
+        setTrackingNumber(existingPackage.tracking_number || "");
+      }
+    }
+  }, [initialPackageId, packages]);
 
   const handleSave = async () => {
     if (!packageName) {
