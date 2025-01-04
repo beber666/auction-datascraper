@@ -9,7 +9,6 @@ import {
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useEffect } from "react";
 
-// Mock data for testing
 const mockPackages = [
   {
     id: 1,
@@ -69,33 +68,31 @@ export const PackageTable = () => {
   };
 
   return (
-    <div className="rounded-md border min-w-[800px]">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[300px]">Package Name</TableHead>
-            <TableHead className="w-[100px] text-center">Items</TableHead>
-            <TableHead className="w-[150px]">Send Date</TableHead>
-            <TableHead className="w-[150px]">Tracking</TableHead>
-            <TableHead className="w-[200px] text-right">Total Amount ({currencySymbols[currency]})</TableHead>
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-[300px]">Package Name</TableHead>
+          <TableHead className="w-[100px] text-center">Items</TableHead>
+          <TableHead className="w-[150px]">Send Date</TableHead>
+          <TableHead className="w-[150px]">Tracking</TableHead>
+          <TableHead className="w-[200px] text-right">Total Amount ({currencySymbols[currency]})</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {mockPackages.map((pkg) => (
+          <TableRow key={pkg.id}>
+            <TableCell className="font-medium">{pkg.name}</TableCell>
+            <TableCell className="text-center">{pkg.itemCount}</TableCell>
+            <TableCell>{pkg.sendDate}</TableCell>
+            <TableCell>
+              {pkg.tracking || <span className="text-muted-foreground">Not shipped yet</span>}
+            </TableCell>
+            <TableCell className="text-right">
+              {formatAmount(pkg.totalAmount)}
+            </TableCell>
           </TableRow>
-        </TableHeader>
-        <TableBody>
-          {mockPackages.map((pkg) => (
-            <TableRow key={pkg.id}>
-              <TableCell className="font-medium">{pkg.name}</TableCell>
-              <TableCell className="text-center">{pkg.itemCount}</TableCell>
-              <TableCell>{pkg.sendDate}</TableCell>
-              <TableCell>
-                {pkg.tracking || <span className="text-muted-foreground">Not shipped yet</span>}
-              </TableCell>
-              <TableCell className="text-right">
-                {formatAmount(pkg.totalAmount)}
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </div>
+        ))}
+      </TableBody>
+    </Table>
   );
 };
