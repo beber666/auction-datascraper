@@ -19,34 +19,44 @@ serve(async (req) => {
     const response = await fetch(url)
     const html = await response.text()
     
+    console.log('Received HTML response')
+    
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
     
+    if (!doc) {
+      throw new Error('Failed to parse HTML')
+    }
+    
     const events = []
-    const eventElements = doc?.querySelectorAll('.event')
+    const eventElements = doc.querySelectorAll('.event')
+    
+    console.log('Found event elements:', eventElements?.length)
     
     eventElements?.forEach(event => {
       const timeElement = event.querySelector('.event-time')
       const contentElement = event.querySelector('.event-content')
       
       if (timeElement && contentElement) {
-        const date = timeElement.querySelector('strong')?.textContent?.trim()
-        const time = timeElement.querySelector('span')?.textContent?.trim()
-        const status = contentElement.querySelector('strong')?.textContent?.trim()
-        const location = contentElement.querySelector('.location')?.textContent?.trim()
-        const carrier = contentElement.querySelector('.carrier')?.textContent?.trim()
+        const dateElement = timeElement.querySelector('strong')
+        const timeSpan = timeElement.querySelector('span')
+        const statusElement = contentElement.querySelector('strong')
+        const locationElement = contentElement.querySelector('.location')
+        const carrierElement = contentElement.querySelector('.carrier')
         
-        if (date && time && status) {
+        if (dateElement && timeSpan && statusElement) {
           events.push({
-            date,
-            time,
-            status,
-            location: location || '',
-            carrier: carrier?.trim() || ''
+            date: dateElement.textContent.trim(),
+            time: timeSpan.textContent.trim(),
+            status: statusElement.textContent.trim(),
+            location: locationElement ? locationElement.textContent.trim() : '',
+            carrier: carrierElement ? carrierElement.textContent.trim() : ''
           })
         }
       }
     })
+    
+    console.log('Parsed events:', events.length)
 
     return new Response(
       JSON.stringify({
