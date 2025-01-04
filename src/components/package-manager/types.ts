@@ -1,16 +1,17 @@
 export interface PackageItem {
   id: string;
+  package_id: string;
   name: string;
-  productUrl: string | null;
-  platformId: string | null;
-  proxyFee: number;
+  product_url: string | null;
+  platform_id: string | null;
+  proxy_fee: number;
   price: number;
-  localShippingPrice: number;
+  local_shipping_price: number;
   weight: number;
-  internationalShippingShare: number;
-  customsFee: number;
-  resalePrice: number;
-  resaleComment: string | null;
+  international_shipping_share: number;
+  customs_fee: number;
+  resale_price: number;
+  resale_comment: string | null;
 }
 
 export interface PackageItemTotals {

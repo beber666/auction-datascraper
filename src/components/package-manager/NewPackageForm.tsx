@@ -32,6 +32,7 @@ export const NewPackageForm = () => {
         name: packageName,
         send_date: sendDate?.toISOString() || null,
         tracking_number: trackingNumber || null,
+        user_id: "", // This will be handled in the usePackages hook
       });
       
       setCurrentPackageId(result.id);
@@ -39,6 +40,7 @@ export const NewPackageForm = () => {
       toast.success("Package created successfully");
     } catch (error) {
       console.error("Failed to create package:", error);
+      toast.error("Failed to create package");
     }
   };
 
