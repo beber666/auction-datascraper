@@ -8,7 +8,6 @@ const corsHeaders = {
 };
 
 serve(async (req) => {
-  // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
@@ -24,18 +23,26 @@ serve(async (req) => {
     const $ = cheerio.load(html);
     const trackingInfo = [];
     
-    // Parse tracking events
-    $('.tracklist-details .trn-block dd').each((_, element) => {
-      const time = $(element).find('time').text();
-      const event = $(element).find('p').text();
+    // Get the tracking details from the copy button's data-clipboard-text attribute
+    const trackingDetails = $('#cl-details').attr('data-clipboard-text');
+    
+    if (trackingDetails) {
+      // Parse the tracking events from the formatted text
+      const lines = trackingDetails.split('\n');
       
-      if (time && event) {
-        trackingInfo.push({
-          time,
-          event,
-        });
-      }
-    });
+      // Skip header lines and footer
+      const events = lines.slice(3, -2).filter(line => line.trim() !== '');
+      
+      events.forEach(event => {
+        const match = event.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}) (.+)$/);
+        if (match) {
+          trackingInfo.push({
+            time: match[1],
+            event: match[2],
+          });
+        }
+      });
+    }
 
     return new Response(
       JSON.stringify({ 
