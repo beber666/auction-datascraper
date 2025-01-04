@@ -3,9 +3,9 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useUserPreferences } from "@/hooks/useUserPreferences";
-import { PackageItem } from "./types";
 import { PackageItemsTable } from "./PackageItemsTable";
+import { usePackageItems } from "@/hooks/usePackageItems";
+import { useAmountFormatter } from "@/hooks/useAmountFormatter";
 
 // Mock data for testing
 const mockItems = [
@@ -41,47 +41,11 @@ const mockItems = [
   },
 ];
 
-const currencySymbols: Record<string, string> = {
-  JPY: "¥",
-  EUR: "€",
-  USD: "$",
-  GBP: "£",
-};
-
 export const NewPackageForm = () => {
   const navigate = useNavigate();
   const [packageName, setPackageName] = useState("");
-  const [items, setItems] = useState<PackageItem[]>(mockItems);
-  const { currency, loadUserPreferences } = useUserPreferences();
-
-  const formatAmount = (amount: number) => {
-    const exchangeRates: Record<string, number> = {
-      JPY: 1,
-      EUR: 0.0062,
-      USD: 0.0067,
-      GBP: 0.0053,
-    };
-
-    const convertedAmount = amount * exchangeRates[currency];
-    const symbol = currencySymbols[currency];
-
-    return `${symbol}${convertedAmount.toLocaleString(undefined, {
-      minimumFractionDigits: currency === 'JPY' ? 0 : 2,
-      maximumFractionDigits: currency === 'JPY' ? 0 : 2,
-    })}`;
-  };
-
-  const handleDeleteItem = (itemId: number) => {
-    setItems(items.filter(item => item.id !== itemId));
-  };
-
-  const handleUpdateItem = (itemId: number, field: keyof PackageItem, value: string | number) => {
-    setItems(items.map(item => 
-      item.id === itemId 
-        ? { ...item, [field]: value }
-        : item
-    ));
-  };
+  const { items, handleDeleteItem, handleUpdateItem } = usePackageItems(mockItems);
+  const { formatAmount } = useAmountFormatter();
 
   return (
     <div className="container mx-auto py-6">

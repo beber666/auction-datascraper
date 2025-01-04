@@ -1,9 +1,8 @@
-import { Button } from "@/components/ui/button";
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
-import { Trash2, Edit } from "lucide-react";
 import { PackageItem } from "./types";
 import { useState } from "react";
+import { PackageItemActions } from "./PackageItemActions";
 
 interface PackageItemRowProps {
   item: PackageItem;
@@ -50,15 +49,9 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: Packa
 
   return (
     <TableRow>
-      <TableCell>
-        {renderEditableField('name', item.name)}
-      </TableCell>
-      <TableCell>
-        {renderEditableField('productUrl', item.productUrl)}
-      </TableCell>
-      <TableCell>
-        {renderEditableField('platformId', item.platformId)}
-      </TableCell>
+      <TableCell>{renderEditableField('name', item.name)}</TableCell>
+      <TableCell>{renderEditableField('productUrl', item.productUrl)}</TableCell>
+      <TableCell>{renderEditableField('platformId', item.platformId)}</TableCell>
       <TableCell className="text-right">
         {renderEditableField('proxyFee', item.proxyFee, "number")}
       </TableCell>
@@ -81,28 +74,13 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: Packa
       <TableCell className="text-right">
         {renderEditableField('resalePrice', item.resalePrice, "number")}
       </TableCell>
+      <TableCell>{renderEditableField('resaleComment', item.resaleComment)}</TableCell>
       <TableCell>
-        {renderEditableField('resaleComment', item.resaleComment)}
-      </TableCell>
-      <TableCell>
-        <div className="flex gap-2">
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => setIsEditing(!isEditing)}
-            className={`${isEditing ? 'text-primary' : 'text-muted-foreground'} hover:text-primary`}
-          >
-            <Edit className="h-4 w-4" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={() => onDelete(item.id)}
-            className="text-destructive hover:text-destructive/90"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        </div>
+        <PackageItemActions
+          isEditing={isEditing}
+          onToggleEdit={() => setIsEditing(!isEditing)}
+          onDelete={() => onDelete(item.id)}
+        />
       </TableCell>
     </TableRow>
   );
