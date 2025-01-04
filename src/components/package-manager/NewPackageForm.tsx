@@ -17,7 +17,7 @@ export const NewPackageForm = () => {
   const [packageName, setPackageName] = useState("");
   const [sendDate, setSendDate] = useState<Date>();
   const [trackingNumber, setTrackingNumber] = useState("");
-  const { items, handleDeleteItem, handleUpdateItem } = usePackageItems([]);
+  const { items, handleAddItem, handleDeleteItem, handleUpdateItem } = usePackageItems([]);
   const { formatAmount } = useAmountFormatter();
 
   const openTrackingUrl = () => {
@@ -109,7 +109,7 @@ export const NewPackageForm = () => {
           </div>
         </div>
 
-        <Button className="w-full">+ Add Item</Button>
+        <Button className="w-full" onClick={handleAddItem}>+ Add Item</Button>
       </div>
     </div>
   );
