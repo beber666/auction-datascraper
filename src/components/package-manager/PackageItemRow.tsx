@@ -52,37 +52,37 @@ export const PackageItemRow = ({
     return type === "number" ? formatAmount(value as number) : value;
   };
 
-  const totalPrice = item.proxyFee + item.price + item.localShippingPrice + 
-                    item.internationalShippingShare + item.customsFee;
+  const totalPrice = item.proxy_fee + item.price + item.local_shipping_price + 
+                    item.international_shipping_share + item.customs_fee;
 
   return (
     <TableRow>
       <TableCell>{renderField('name', item.name)}</TableCell>
-      <TableCell>{renderField('productUrl', item.productUrl || '')}</TableCell>
-      <TableCell>{renderField('platformId', item.platformId || '')}</TableCell>
+      <TableCell>{renderField('product_url', item.product_url || '')}</TableCell>
+      <TableCell>{renderField('platform_id', item.platform_id || '')}</TableCell>
       <TableCell className="text-right">
-        {renderField('proxyFee', item.proxyFee, "number")}
+        {renderField('proxy_fee', item.proxy_fee, "number")}
       </TableCell>
       <TableCell className="text-right">
         {renderField('price', item.price, "number")}
       </TableCell>
       <TableCell className="text-right">
-        {renderField('localShippingPrice', item.localShippingPrice, "number")}
+        {renderField('local_shipping_price', item.local_shipping_price, "number")}
       </TableCell>
       <TableCell className="text-right">
         {renderField('weight', item.weight, "number")}
       </TableCell>
       <TableCell className="text-right">
-        {renderField('internationalShippingShare', item.internationalShippingShare, "number")}
+        {renderField('international_shipping_share', item.international_shipping_share, "number")}
       </TableCell>
       <TableCell className="text-right">
-        {renderField('customsFee', item.customsFee, "number")}
+        {renderField('customs_fee', item.customs_fee, "number")}
       </TableCell>
       <TableCell className="text-right">{formatAmount(totalPrice)}</TableCell>
       <TableCell className="text-right">
-        {renderField('resalePrice', item.resalePrice, "number")}
+        {renderField('resale_price', item.resale_price, "number")}
       </TableCell>
-      <TableCell>{renderField('resaleComment', item.resaleComment || '')}</TableCell>
+      <TableCell>{renderField('resale_comment', item.resale_comment || '')}</TableCell>
       <TableCell>
         <PackageItemActions
           isEditing={isRowEditing}
