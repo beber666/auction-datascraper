@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Textarea } from "@/components/ui/textarea";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
 
 // Mock data for testing
 const mockItems = [
@@ -47,9 +47,34 @@ const mockItems = [
   },
 ];
 
+const currencySymbols: Record<string, string> = {
+  JPY: "¥",
+  EUR: "€",
+  USD: "$",
+  GBP: "£",
+};
+
 export const NewPackageForm = () => {
   const navigate = useNavigate();
   const [packageName, setPackageName] = useState("");
+  const { currency, loadUserPreferences } = useUserPreferences();
+
+  const formatAmount = (amount: number) => {
+    const exchangeRates: Record<string, number> = {
+      JPY: 1,
+      EUR: 0.0062,
+      USD: 0.0067,
+      GBP: 0.0053,
+    };
+
+    const convertedAmount = amount * exchangeRates[currency];
+    const symbol = currencySymbols[currency];
+
+    return `${symbol}${convertedAmount.toLocaleString(undefined, {
+      minimumFractionDigits: currency === 'JPY' ? 0 : 2,
+      maximumFractionDigits: currency === 'JPY' ? 0 : 2,
+    })}`;
+  };
 
   return (
     <div className="container mx-auto py-6 space-y-6">
@@ -107,14 +132,14 @@ export const NewPackageForm = () => {
                     </a>
                   </TableCell>
                   <TableCell>{item.platformId}</TableCell>
-                  <TableCell className="text-right">¥{item.proxyFee.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">¥{item.price.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">¥{item.localShippingPrice.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.proxyFee)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.price)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.localShippingPrice)}</TableCell>
                   <TableCell className="text-right">{item.weight}</TableCell>
-                  <TableCell className="text-right">¥{item.internationalShippingShare.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">¥{item.customsFee.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">¥{item.totalPrice.toLocaleString()}</TableCell>
-                  <TableCell className="text-right">¥{item.resalePrice.toLocaleString()}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.internationalShippingShare)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.customsFee)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.totalPrice)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(item.resalePrice)}</TableCell>
                   <TableCell>{item.resaleComment}</TableCell>
                 </TableRow>
               ))}
