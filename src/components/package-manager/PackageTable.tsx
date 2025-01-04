@@ -25,8 +25,8 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { usePackageItems } from "@/hooks/usePackageItems";
-import { useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "@/integrations/supabase/client";
 
 export const PackageTable = () => {
   const { packages, isLoading, deletePackage } = usePackages();
@@ -68,29 +68,40 @@ export const PackageTable = () => {
     }
   };
 
-  // Pré-calculer tous les totaux pour chaque package
-  const packageTotals = useMemo(() => {
-    if (!packages) return {};
-
-    const totals: Record<string, { totalCost: number; totalResale: number; balance: number }> = {};
-
-    packages.forEach(pkg => {
-      const { items } = usePackageItems(pkg.id);
-      const totalResale = items.reduce((sum, item) => sum + (item.resale_price || 0), 0);
-      const totalCost = items.reduce((sum, item) => 
-        sum + (item.proxy_fee || 0) + (item.price || 0) + 
-        (item.local_shipping_price || 0) + (item.international_shipping_share || 0) + 
-        (item.customs_fee || 0), 0);
+  // Fetch all package items in one query
+  const { data: allPackageItems = [] } = useQuery({
+    queryKey: ['allPackageItems', packages?.map(p => p.id)],
+    queryFn: async () => {
+      if (!packages?.length) return [];
       
-      totals[pkg.id] = {
-        totalCost,
-        totalResale,
-        balance: totalResale - totalCost
-      };
-    });
+      const { data, error } = await supabase
+        .from('package_items')
+        .select('*')
+        .in('package_id', packages.map(p => p.id));
 
-    return totals;
-  }, [packages]);
+      if (error) throw error;
+      return data;
+    },
+    enabled: !!packages?.length,
+  });
+
+  // Calculate totals for each package
+  const packageTotals = packages?.reduce((acc, pkg) => {
+    const packageItems = allPackageItems.filter(item => item.package_id === pkg.id);
+    
+    const totalResale = packageItems.reduce((sum, item) => sum + (item.resale_price || 0), 0);
+    const totalCost = packageItems.reduce((sum, item) => 
+      sum + (item.proxy_fee || 0) + (item.price || 0) + 
+      (item.local_shipping_price || 0) + (item.international_shipping_share || 0) + 
+      (item.customs_fee || 0), 0);
+
+    acc[pkg.id] = {
+      totalCost,
+      totalResale,
+      balance: totalResale - totalCost
+    };
+    return acc;
+  }, {} as Record<string, { totalCost: number; totalResale: number; balance: number }>);
 
   if (isLoading) {
     return <div>Loading...</div>;
@@ -111,7 +122,7 @@ export const PackageTable = () => {
       </TableHeader>
       <TableBody>
         {packages?.map((pkg) => {
-          const totals = packageTotals[pkg.id] || { totalCost: 0, totalResale: 0, balance: 0 };
+          const totals = packageTotals?.[pkg.id] || { totalCost: 0, totalResale: 0, balance: 0 };
 
           return (
             <TableRow 
