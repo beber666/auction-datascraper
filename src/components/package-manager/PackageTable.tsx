@@ -9,6 +9,7 @@ import {
 import { useUserPreferences } from "@/hooks/useUserPreferences";
 import { useEffect } from "react";
 
+// Mock data structure updated to include items with their total prices
 const mockPackages = [
   {
     id: 1,
@@ -16,7 +17,11 @@ const mockPackages = [
     itemCount: 3,
     sendDate: "2024-03-15",
     tracking: "JP123456789",
-    totalAmount: 15000,
+    items: [
+      { totalPrice: 5000 },
+      { totalPrice: 7000 },
+      { totalPrice: 3000 },
+    ],
   },
   {
     id: 2,
@@ -24,7 +29,13 @@ const mockPackages = [
     itemCount: 5,
     sendDate: "2024-03-20",
     tracking: "JP987654321",
-    totalAmount: 25000,
+    items: [
+      { totalPrice: 8000 },
+      { totalPrice: 6000 },
+      { totalPrice: 4000 },
+      { totalPrice: 3500 },
+      { totalPrice: 3500 },
+    ],
   },
   {
     id: 3,
@@ -32,7 +43,10 @@ const mockPackages = [
     itemCount: 2,
     sendDate: "2024-03-25",
     tracking: null,
-    totalAmount: 8000,
+    items: [
+      { totalPrice: 5000 },
+      { totalPrice: 3000 },
+    ],
   },
 ];
 
@@ -67,6 +81,10 @@ export const PackageTable = () => {
     })}`;
   };
 
+  const calculatePackageTotal = (items: { totalPrice: number }[]) => {
+    return items.reduce((sum, item) => sum + item.totalPrice, 0);
+  };
+
   return (
     <Table>
       <TableHeader>
@@ -88,7 +106,7 @@ export const PackageTable = () => {
               {pkg.tracking || <span className="text-muted-foreground">Not shipped yet</span>}
             </TableCell>
             <TableCell className="text-right">
-              {formatAmount(pkg.totalAmount)}
+              {formatAmount(calculatePackageTotal(pkg.items))}
             </TableCell>
           </TableRow>
         ))}
