@@ -17,7 +17,7 @@ export const NewPackageForm = () => {
   const [packageName, setPackageName] = useState("");
   const [sendDate, setSendDate] = useState<Date>();
   const [trackingNumber, setTrackingNumber] = useState("");
-  const { items, handleDeleteItem, handleUpdateItem } = usePackageItems(mockItems);
+  const { items, handleDeleteItem, handleUpdateItem } = usePackageItems([]);
   const { formatAmount } = useAmountFormatter();
 
   return (
