@@ -48,8 +48,14 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditi
   const renderEditableField = (
     field: keyof PackageItem,
     value: string | number,
-    type: "text" | "number" = "text"
+    type: "text" | "number" = "text",
+    isTotal: boolean = false
   ) => {
+    // Si c'est un total, on ne rend jamais le champ éditable
+    if (isTotal) {
+      return type === "number" ? formatAmount(value as number) : value;
+    }
+
     if ((isRowEditing || isEditing) && isEditing) {
       return (
         <Input 
@@ -90,7 +96,7 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditi
       <TableCell className="text-right">
         {renderEditableField('customsFee', item.customsFee, "number")}
       </TableCell>
-      <TableCell className="text-right">{formatAmount(calculateTotalPrice(item))}</TableCell>
+      <TableCell className="text-right">{renderEditableField('totalPrice', calculateTotalPrice(item), "number", true)}</TableCell>
       <TableCell className="text-right">
         {renderEditableField('resalePrice', item.resalePrice, "number")}
       </TableCell>
