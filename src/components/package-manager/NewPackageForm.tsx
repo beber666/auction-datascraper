@@ -13,6 +13,7 @@ import { Label } from "@/components/ui/label";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { Trash2 } from "lucide-react";
 
 // Mock data for testing
 const mockItems = [
@@ -58,6 +59,7 @@ const currencySymbols: Record<string, string> = {
 export const NewPackageForm = () => {
   const navigate = useNavigate();
   const [packageName, setPackageName] = useState("");
+  const [items, setItems] = useState(mockItems);
   const { currency, loadUserPreferences } = useUserPreferences();
 
   const formatAmount = (amount: number) => {
@@ -77,8 +79,12 @@ export const NewPackageForm = () => {
     })}`;
   };
 
+  const handleDeleteItem = (itemId: number) => {
+    setItems(items.filter(item => item.id !== itemId));
+  };
+
   // Calculate totals
-  const totals = mockItems.reduce((acc, item) => {
+  const totals = items.reduce((acc, item) => {
     return {
       proxyFee: acc.proxyFee + item.proxyFee,
       price: acc.price + item.price,
@@ -141,10 +147,11 @@ export const NewPackageForm = () => {
                   <TableHead className="text-right w-[100px]">Total Price</TableHead>
                   <TableHead className="text-right w-[100px]">Resale Price</TableHead>
                   <TableHead className="w-[200px]">Comment</TableHead>
+                  <TableHead className="w-[50px]"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {mockItems.map((item) => (
+                {items.map((item) => (
                   <TableRow key={item.id}>
                     <TableCell>{item.name}</TableCell>
                     <TableCell>
@@ -167,6 +174,16 @@ export const NewPackageForm = () => {
                     <TableCell className="text-right">{formatAmount(item.totalPrice)}</TableCell>
                     <TableCell className="text-right">{formatAmount(item.resalePrice)}</TableCell>
                     <TableCell>{item.resaleComment}</TableCell>
+                    <TableCell>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleDeleteItem(item.id)}
+                        className="text-destructive hover:text-destructive/90"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -181,6 +198,7 @@ export const NewPackageForm = () => {
                   <TableCell className="text-right">{formatAmount(totals.customsFee)}</TableCell>
                   <TableCell className="text-right">{formatAmount(totals.totalPrice)}</TableCell>
                   <TableCell className="text-right">{formatAmount(totals.resalePrice)}</TableCell>
+                  <TableCell></TableCell>
                   <TableCell></TableCell>
                 </TableRow>
               </TableFooter>
