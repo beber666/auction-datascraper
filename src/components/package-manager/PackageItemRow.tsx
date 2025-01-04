@@ -70,6 +70,10 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditi
         />
       );
     }
+    // Special handling for weight field
+    if (field === 'weight') {
+      return `${value}g`;
+    }
     return type === "number" ? formatAmount(value as number) : value;
   };
 
