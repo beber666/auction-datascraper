@@ -8,19 +8,31 @@ const PackageManager = () => {
   const [isAddingPackage, setIsAddingPackage] = useState(false);
 
   if (isAddingPackage) {
-    return <NewPackageForm />;
+    return (
+      <div className="flex-1 overflow-hidden">
+        <div className="h-full overflow-y-auto px-4 py-6">
+          <NewPackageForm />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="container mx-auto py-8 px-4">
-      <div className="flex justify-between items-center mb-8">
-        <h1 className="text-4xl font-bold">Package Manager</h1>
-        <Button onClick={() => setIsAddingPackage(true)}>
-          <PackagePlus className="mr-2 h-4 w-4" />
-          Nouveau Paquet
-        </Button>
+    <div className="flex-1 overflow-hidden">
+      <div className="h-full overflow-y-auto px-4 py-6">
+        <div className="container mx-auto">
+          <div className="flex justify-between items-center mb-8">
+            <h1 className="text-4xl font-bold">Package Manager</h1>
+            <Button onClick={() => setIsAddingPackage(true)}>
+              <PackagePlus className="mr-2 h-4 w-4" />
+              Nouveau Paquet
+            </Button>
+          </div>
+          <div className="overflow-x-auto">
+            <PackageTable />
+          </div>
+        </div>
       </div>
-      <PackageTable />
     </div>
   );
 };

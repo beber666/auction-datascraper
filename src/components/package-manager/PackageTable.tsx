@@ -69,15 +69,15 @@ export const PackageTable = () => {
   };
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-md border min-w-[800px]">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>Package Name</TableHead>
-            <TableHead className="text-center">Items</TableHead>
-            <TableHead>Send Date</TableHead>
-            <TableHead>Tracking</TableHead>
-            <TableHead className="text-right">Total Amount ({currencySymbols[currency]})</TableHead>
+            <TableHead className="w-[300px]">Package Name</TableHead>
+            <TableHead className="w-[100px] text-center">Items</TableHead>
+            <TableHead className="w-[150px]">Send Date</TableHead>
+            <TableHead className="w-[150px]">Tracking</TableHead>
+            <TableHead className="w-[200px] text-right">Total Amount ({currencySymbols[currency]})</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
