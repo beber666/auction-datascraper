@@ -8,6 +8,7 @@ export interface Package {
   send_date: string | null;
   tracking_number: string | null;
   total_items_cost: number;
+  user_id: string;
 }
 
 export const usePackages = () => {
@@ -32,9 +33,17 @@ export const usePackages = () => {
 
   const createPackage = useMutation({
     mutationFn: async (newPackage: Omit<Package, 'id' | 'total_items_cost'>) => {
+      const { data: userData, error: userError } = await supabase.auth.getUser();
+      if (userError) throw userError;
+
+      const packageData = {
+        ...newPackage,
+        user_id: userData.user.id,
+      };
+
       const { data, error } = await supabase
         .from('packages')
-        .insert(newPackage)
+        .insert(packageData)
         .select()
         .single();
 

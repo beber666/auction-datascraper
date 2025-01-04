@@ -7,8 +7,8 @@ import { usePackageTotals } from "@/hooks/usePackageTotals";
 
 interface PackageItemsTableProps {
   items: PackageItem[];
-  onDeleteItem: (id: number) => void;
-  onUpdateItem: (id: number, field: keyof PackageItem, value: string | number) => void;
+  onDeleteItem: (id: string) => void;
+  onUpdateItem: (id: string, field: keyof PackageItem, value: string | number) => void;
   formatAmount: (amount: number) => string;
   isEditing: boolean;
 }

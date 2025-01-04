@@ -6,8 +6,8 @@ import { usePackageItemEditing } from "@/hooks/usePackageItemEditing";
 
 interface PackageItemRowProps {
   item: PackageItem;
-  onDelete: (id: number) => void;
-  onUpdate: (id: number, field: keyof PackageItem, value: string | number) => void;
+  onDelete: (id: string) => void;
+  onUpdate: (id: string, field: keyof PackageItem, value: string | number) => void;
   formatAmount: (amount: number) => string;
   isEditing: boolean;
 }
@@ -58,8 +58,8 @@ export const PackageItemRow = ({
   return (
     <TableRow>
       <TableCell>{renderField('name', item.name)}</TableCell>
-      <TableCell>{renderField('productUrl', item.productUrl)}</TableCell>
-      <TableCell>{renderField('platformId', item.platformId)}</TableCell>
+      <TableCell>{renderField('productUrl', item.productUrl || '')}</TableCell>
+      <TableCell>{renderField('platformId', item.platformId || '')}</TableCell>
       <TableCell className="text-right">
         {renderField('proxyFee', item.proxyFee, "number")}
       </TableCell>
@@ -82,7 +82,7 @@ export const PackageItemRow = ({
       <TableCell className="text-right">
         {renderField('resalePrice', item.resalePrice, "number")}
       </TableCell>
-      <TableCell>{renderField('resaleComment', item.resaleComment)}</TableCell>
+      <TableCell>{renderField('resaleComment', item.resaleComment || '')}</TableCell>
       <TableCell>
         <PackageItemActions
           isEditing={isRowEditing}
