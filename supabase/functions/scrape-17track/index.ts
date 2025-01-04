@@ -1,14 +1,20 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
 import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
+import { corsHeaders } from "../_shared/cors.ts";
 
 serve(async (req) => {
+  // Handle CORS preflight requests
+  if (req.method === 'OPTIONS') {
+    return new Response(null, { headers: corsHeaders });
+  }
+
   try {
     const { trackingNumber } = await req.json()
     
     if (!trackingNumber) {
       return new Response(
         JSON.stringify({ success: false, error: "Tracking number is required" }),
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
     }
 
@@ -63,7 +69,7 @@ serve(async (req) => {
           success: true, 
           trackingInfo 
         }),
-        { headers: { "Content-Type": "application/json" } }
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
       )
 
     } finally {
@@ -77,7 +83,7 @@ serve(async (req) => {
         success: false, 
         error: error.message 
       }),
-      { headers: { "Content-Type": "application/json" } }
+      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     )
   }
 })
