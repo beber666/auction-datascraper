@@ -14,11 +14,6 @@ import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
-interface TrackingEvent {
-  time: string;
-  event: string;
-}
-
 export const NewPackageForm = () => {
   const navigate = useNavigate();
   const [packageName, setPackageName] = useState("");
@@ -42,16 +37,17 @@ export const NewPackageForm = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.functions.invoke('scrape-17track', {
+      const { data, error } = await supabase.functions.invoke('scrape-parcelsapp', {
         body: { trackingNumber },
       });
 
-      console.log('Response from scrape-17track:', { data, error });
+      console.log('Response from scrape-parcelsapp:', { data, error });
 
       if (error) throw error;
 
       if (data.success) {
         setTrackingUrl(data.trackingUrl);
+        console.log('HTML content length:', data.html.length);
         toast({
           title: "Success",
           description: "Tracking information found",
