@@ -42,14 +42,22 @@ export const NewPackageForm = () => {
 
     setIsLoading(true);
     try {
+      console.log('Calling scrape-17track function with tracking number:', trackingNumber);
+      
       const { data, error } = await supabase.functions.invoke('scrape-17track', {
         body: { trackingNumber },
       });
+
+      console.log('Response from scrape-17track:', { data, error });
 
       if (error) throw error;
 
       if (data.success && data.trackingInfo) {
         setTrackingInfo(data.trackingInfo);
+        toast({
+          title: "Success",
+          description: `Found ${data.trackingInfo.length} tracking events`,
+        });
       } else {
         throw new Error('Failed to fetch tracking information');
       }
@@ -149,7 +157,7 @@ export const NewPackageForm = () => {
 
         <Button className="w-full">+ Add Item</Button>
 
-        {trackingInfo.length > 0 && (
+        {trackingInfo && trackingInfo.length > 0 && (
           <div className="border rounded-lg p-4 mt-4">
             <h3 className="text-lg font-semibold mb-4">Tracking Information</h3>
             <div className="space-y-4">

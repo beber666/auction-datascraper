@@ -17,14 +17,18 @@ serve(async (req) => {
     console.log('Scraping tracking number:', trackingNumber);
 
     const url = `https://t.17track.net/en#nums=${trackingNumber}`;
+    console.log('Fetching URL:', url);
+
     const response = await fetch(url);
     const html = await response.text();
+    console.log('Received HTML response');
     
     const $ = cheerio.load(html);
     const trackingInfo = [];
     
     // Get the tracking details from the copy button's data-clipboard-text attribute
     const trackingDetails = $('#cl-details').attr('data-clipboard-text');
+    console.log('Found tracking details:', trackingDetails);
     
     if (trackingDetails) {
       // Parse the tracking events from the formatted text
@@ -43,6 +47,8 @@ serve(async (req) => {
         }
       });
     }
+
+    console.log('Parsed tracking info:', trackingInfo);
 
     return new Response(
       JSON.stringify({ 
