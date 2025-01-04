@@ -52,7 +52,7 @@ export const NewPackageForm = () => {
               value={packageName}
               onChange={(e) => setPackageName(e.target.value)}
               placeholder="Enter package name"
-              readOnly={!isEditing}
+              disabled={!isEditing}
               className={!isEditing ? "bg-gray-100" : ""}
             />
           </div>
@@ -95,7 +95,7 @@ export const NewPackageForm = () => {
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="Enter tracking number"
-                readOnly={!isEditing}
+                disabled={!isEditing}
                 className={!isEditing ? "bg-gray-100" : ""}
               />
               {trackingNumber && (
