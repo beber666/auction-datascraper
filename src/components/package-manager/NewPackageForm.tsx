@@ -51,10 +51,7 @@ export const NewPackageForm = () => {
     <div className="container mx-auto py-6">
       <div className="flex justify-between items-center mb-2">
         <h2 className="text-2xl font-bold">Package Details</h2>
-        <div className="space-x-2">
-          <Button variant="outline" onClick={() => navigate("/package-manager")}>
-            Cancel
-          </Button>
+        <div>
           {isEditing ? (
             <Button onClick={() => setIsEditing(false)}>Save</Button>
           ) : (
