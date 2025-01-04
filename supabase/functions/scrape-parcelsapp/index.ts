@@ -16,7 +16,11 @@ serve(async (req) => {
     console.log('Fetching tracking info for:', trackingNumber)
 
     const url = `https://parcelsapp.com/en/tracking/${trackingNumber}`
-    const response = await fetch(url)
+    const response = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+      }
+    })
     const html = await response.text()
     
     console.log('Raw HTML content:', html)
