@@ -7,6 +7,7 @@ import Account from "@/pages/Account";
 import Login from "@/pages/Login";
 import Tools from "@/pages/Tools";
 import ZenScraper from "@/pages/ZenScraper";
+import PackageManager from "@/pages/PackageManager";
 
 function App() {
   return (
@@ -22,6 +23,7 @@ function App() {
                 <Route path="/login" element={<Login />} />
                 <Route path="/tools" element={<Tools />} />
                 <Route path="/zen-scraper" element={<ZenScraper />} />
+                <Route path="/package-manager" element={<PackageManager />} />
               </Routes>
             </main>
           </div>
