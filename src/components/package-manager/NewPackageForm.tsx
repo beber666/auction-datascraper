@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 export const NewPackageForm = () => {
   const navigate = useNavigate();
-  const [isEditing, setIsEditing] = useState(true);
+  const [isEditing, setIsEditing] = useState(false);
   const [packageName, setPackageName] = useState("");
   const [sendDate, setSendDate] = useState<Date>();
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -38,7 +38,7 @@ export const NewPackageForm = () => {
           {isEditing ? (
             <Button onClick={() => setIsEditing(false)}>Save</Button>
           ) : (
-            <Button variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
+            <Button onClick={() => setIsEditing(true)}>Edit Package</Button>
           )}
         </div>
       </div>
