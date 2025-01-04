@@ -19,7 +19,8 @@ serve(async (req) => {
     const response = await fetch(url)
     const html = await response.text()
     
-    console.log('Received HTML response')
+    console.log('Raw HTML content:', html)
+    console.log('HTML length:', html.length)
     
     const parser = new DOMParser()
     const doc = parser.parseFromString(html, 'text/html')
@@ -62,7 +63,8 @@ serve(async (req) => {
       JSON.stringify({
         success: true,
         trackingUrl: url,
-        events
+        events,
+        rawHtml: html // Adding the raw HTML to the response for debugging
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
