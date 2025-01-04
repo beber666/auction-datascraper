@@ -54,7 +54,10 @@ export const PackageTable = () => {
     })}`;
   };
 
-  const handleDelete = async (packageId: string) => {
+  const handleDelete = async (e: React.MouseEvent, packageId: string) => {
+    // Prevent the click event from bubbling up to the row
+    e.stopPropagation();
+    
     try {
       await deletePackage.mutateAsync(packageId);
       toast.success("Package supprimé avec succès");
@@ -83,11 +86,7 @@ export const PackageTable = () => {
           <TableRow 
             key={pkg.id} 
             className="cursor-pointer hover:bg-muted/50"
-            onClick={(e) => {
-              // Prevent navigation when clicking delete button
-              if ((e.target as HTMLElement).closest('.delete-button')) return;
-              navigate(`/package-manager/${pkg.id}`);
-            }}
+            onClick={() => navigate(`/package-manager/${pkg.id}`)}
           >
             <TableCell className="font-medium">{pkg.name}</TableCell>
             <TableCell>
@@ -106,11 +105,12 @@ export const PackageTable = () => {
                     variant="ghost"
                     size="icon"
                     className="delete-button text-destructive hover:text-destructive/90"
+                    onClick={(e) => e.stopPropagation()} // Prevent row click when opening dialog
                   >
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </AlertDialogTrigger>
-                <AlertDialogContent>
+                <AlertDialogContent onClick={(e) => e.stopPropagation()}> {/* Prevent row click when dialog is open */}
                   <AlertDialogHeader>
                     <AlertDialogTitle>Êtes-vous sûr ?</AlertDialogTitle>
                     <AlertDialogDescription>
@@ -119,9 +119,9 @@ export const PackageTable = () => {
                     </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
-                    <AlertDialogCancel>Annuler</AlertDialogCancel>
+                    <AlertDialogCancel onClick={(e) => e.stopPropagation()}>Annuler</AlertDialogCancel>
                     <AlertDialogAction
-                      onClick={() => handleDelete(pkg.id)}
+                      onClick={(e) => handleDelete(e, pkg.id)}
                       className="bg-destructive hover:bg-destructive/90"
                     >
                       Supprimer
