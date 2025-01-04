@@ -14,60 +14,54 @@ serve(async (req) => {
   }
 
   try {
-    const { trackingNumber } = await req.json()
+    const { trackingNumber } = await req.json();
     
     if (!trackingNumber) {
       return new Response(
         JSON.stringify({ success: false, error: "Tracking number is required" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+      );
     }
 
     console.log('Scraping tracking number:', trackingNumber);
 
     // Launch browser
     const browser = await puppeteer.launch({
-      args: ['--no-sandbox', '--disable-setuid-sandbox']
+      args: ['--no-sandbox']
     });
     
     try {
       const page = await browser.newPage();
       
       // Navigate to 17track
-      await page.goto(`https://t.17track.net/en#nums=${trackingNumber}`, {
-        waitUntil: 'networkidle0',
-        timeout: 30000
-      });
+      await page.goto(`https://t.17track.net/en#nums=${trackingNumber}`);
 
       // Wait for the tracking details to load
       await page.waitForSelector('#cl-details', { timeout: 30000 });
 
-      // Get tracking details from the copy button
-      const trackingDetails = await page.evaluate(() => {
-        const button = document.querySelector('#cl-details');
-        return button?.getAttribute('data-clipboard-text') || '';
-      });
-
-      console.log('Found tracking details:', trackingDetails);
-
-      const trackingInfo = [];
-      
-      if (trackingDetails) {
-        // Split the text into lines and process each event
-        const lines = trackingDetails.split('\n');
-        lines.forEach(line => {
-          // Look for lines that start with a date (YYYY-MM-DD)
-          if (line.match(/^\d{4}-\d{2}-\d{2}/)) {
-            const [dateTime, ...eventParts] = line.split(' ');
-            trackingInfo.push({
-              time: dateTime,
-              event: eventParts.join(' ')
+      // Get tracking details
+      const trackingInfo = await page.evaluate(() => {
+        const events = [];
+        const eventElements = document.querySelectorAll('.trk-card-content');
+        
+        eventElements.forEach(element => {
+          const timeElement = element.querySelector('.time');
+          const statusElement = element.querySelector('.status');
+          
+          if (timeElement && statusElement) {
+            events.push({
+              time: timeElement.textContent?.trim() || '',
+              event: statusElement.textContent?.trim() || ''
             });
           }
         });
-      }
+        
+        return events;
+      });
 
-      console.log('Parsed tracking info:', trackingInfo);
+      console.log('Found tracking events:', trackingInfo);
+
+      await browser.close();
 
       return new Response(
         JSON.stringify({ 
@@ -75,10 +69,12 @@ serve(async (req) => {
           trackingInfo 
         }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      )
+      );
 
-    } finally {
+    } catch (error) {
+      console.error('Error during scraping:', error);
       await browser.close();
+      throw error;
     }
 
   } catch (error) {
@@ -89,6 +85,6 @@ serve(async (req) => {
         error: error.message 
       }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    )
+    );
   }
 })
