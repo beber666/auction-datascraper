@@ -1,8 +1,8 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { PackageItem } from "./types";
-import { useState, useEffect } from "react";
 import { PackageItemActions } from "./PackageItemActions";
+import { usePackageItemEditing } from "@/hooks/usePackageItemEditing";
 
 interface PackageItemRowProps {
   item: PackageItem;
@@ -19,25 +19,7 @@ export const PackageItemRow = ({
   formatAmount, 
   isEditing: isGlobalEditing 
 }: PackageItemRowProps) => {
-  const [isRowEditing, setIsRowEditing] = useState(false);
-
-  useEffect(() => {
-    const isNewItem = !item.name && !item.productUrl && !item.platformId && 
-                     item.proxyFee === 0 && item.price === 0 && item.localShippingPrice === 0 &&
-                     item.weight === 0 && item.internationalShippingShare === 0 && item.customsFee === 0 &&
-                     item.resalePrice === 0 && !item.resaleComment;
-    if (isNewItem && isGlobalEditing) {
-      setIsRowEditing(true);
-    }
-  }, [item, isGlobalEditing]);
-
-  useEffect(() => {
-    if (isGlobalEditing) {
-      setIsRowEditing(true);
-    } else {
-      setIsRowEditing(false);
-    }
-  }, [isGlobalEditing]);
+  const { isRowEditing, toggleEditing } = usePackageItemEditing(item, isGlobalEditing);
 
   const handleNumberChange = (field: keyof PackageItem, value: string) => {
     const numValue = value === '' ? 0 : parseFloat(value);
@@ -47,7 +29,9 @@ export const PackageItemRow = ({
   };
 
   const renderField = (field: keyof PackageItem, value: string | number, type: "text" | "number" = "text") => {
-    if (isRowEditing || isGlobalEditing) {
+    const isEditable = isRowEditing || isGlobalEditing;
+    
+    if (isEditable) {
       return (
         <Input 
           type={type}
@@ -102,7 +86,7 @@ export const PackageItemRow = ({
       <TableCell>
         <PackageItemActions
           isEditing={isRowEditing}
-          onToggleEdit={() => setIsRowEditing(!isRowEditing)}
+          onToggleEdit={toggleEditing}
           onDelete={() => onDelete(item.id)}
         />
       </TableCell>
