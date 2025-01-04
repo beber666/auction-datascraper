@@ -8,7 +8,7 @@ import { usePackageItems } from "@/hooks/usePackageItems";
 import { useAmountFormatter } from "@/hooks/useAmountFormatter";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Search } from "lucide-react";
+import { CalendarIcon, ExternalLink, Search } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
@@ -24,7 +24,7 @@ export const NewPackageForm = () => {
   const [packageName, setPackageName] = useState("");
   const [sendDate, setSendDate] = useState<Date>();
   const [trackingNumber, setTrackingNumber] = useState("");
-  const [trackingInfo, setTrackingInfo] = useState<TrackingEvent[]>([]);
+  const [trackingUrl, setTrackingUrl] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const { items, handleDeleteItem, handleUpdateItem } = usePackageItems([]);
   const { formatAmount } = useAmountFormatter();
@@ -42,8 +42,6 @@ export const NewPackageForm = () => {
 
     setIsLoading(true);
     try {
-      console.log('Calling scrape-17track function with tracking number:', trackingNumber);
-      
       const { data, error } = await supabase.functions.invoke('scrape-17track', {
         body: { trackingNumber },
       });
@@ -52,11 +50,11 @@ export const NewPackageForm = () => {
 
       if (error) throw error;
 
-      if (data.success && data.trackingInfo) {
-        setTrackingInfo(data.trackingInfo);
+      if (data.success) {
+        setTrackingUrl(data.trackingUrl);
         toast({
           title: "Success",
-          description: `Found ${data.trackingInfo.length} tracking events`,
+          description: "Tracking information found",
         });
       } else {
         throw new Error('Failed to fetch tracking information');
@@ -70,6 +68,12 @@ export const NewPackageForm = () => {
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const openTrackingUrl = () => {
+    if (trackingUrl) {
+      window.open(trackingUrl, '_blank');
     }
   };
 
@@ -140,6 +144,15 @@ export const NewPackageForm = () => {
               >
                 <Search className="h-4 w-4" />
               </Button>
+              {trackingUrl && (
+                <Button
+                  variant="outline"
+                  size="icon"
+                  onClick={openTrackingUrl}
+                >
+                  <ExternalLink className="h-4 w-4" />
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -156,20 +169,6 @@ export const NewPackageForm = () => {
         </div>
 
         <Button className="w-full">+ Add Item</Button>
-
-        {trackingInfo && trackingInfo.length > 0 && (
-          <div className="border rounded-lg p-4 mt-4">
-            <h3 className="text-lg font-semibold mb-4">Tracking Information</h3>
-            <div className="space-y-4">
-              {trackingInfo.map((event, index) => (
-                <div key={index} className="flex gap-4 text-sm">
-                  <span className="text-gray-500 min-w-[180px]">{event.time}</span>
-                  <span>{event.event}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     </div>
   );
