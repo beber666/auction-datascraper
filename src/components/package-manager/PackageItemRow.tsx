@@ -32,9 +32,7 @@ export const PackageItemRow = ({
   }, [item, isEditing]);
 
   useEffect(() => {
-    if (!isEditing) {
-      setIsRowEditing(false);
-    }
+    setIsRowEditing(isEditing);
   }, [isEditing]);
 
   const handleNumberChange = (field: keyof PackageItem, value: string) => {
@@ -45,7 +43,7 @@ export const PackageItemRow = ({
   };
 
   const renderField = (field: keyof PackageItem, value: string | number, type: "text" | "number" = "text") => {
-    if ((isRowEditing || isEditing) && isEditing) {
+    if (isEditing) {
       return (
         <Input 
           type={type}
@@ -99,9 +97,9 @@ export const PackageItemRow = ({
       <TableCell>{renderField('resaleComment', item.resaleComment)}</TableCell>
       <TableCell>
         <PackageItemActions
-          isEditing={isRowEditing && isEditing}
-          onToggleEdit={() => isEditing && setIsRowEditing(!isRowEditing)}
-          onDelete={() => isEditing && onDelete(item.id)}
+          isEditing={isEditing}
+          onToggleEdit={() => setIsRowEditing(!isRowEditing)}
+          onDelete={() => onDelete(item.id)}
         />
       </TableCell>
     </TableRow>
