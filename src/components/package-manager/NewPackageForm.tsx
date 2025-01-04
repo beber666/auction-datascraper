@@ -27,9 +27,29 @@ export const NewPackageForm = () => {
     }
   };
 
+  const calculateTotalResalePrice = () => {
+    return items.reduce((total, item) => total + item.resalePrice, 0);
+  };
+
+  const calculateTotalCost = () => {
+    return items.reduce((total, item) => (
+      total + item.proxyFee + item.price + item.localShippingPrice + 
+      item.internationalShippingShare + item.customsFee
+    ), 0);
+  };
+
+  const calculateBalance = () => {
+    const totalResale = calculateTotalResalePrice();
+    const totalCost = calculateTotalCost();
+    return totalResale - totalCost;
+  };
+
+  const balance = calculateBalance();
+  const isProfit = balance >= 0;
+
   return (
     <div className="container mx-auto py-6">
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex justify-between items-center mb-2">
         <h2 className="text-2xl font-bold">Package Details</h2>
         <div className="space-x-2">
           <Button variant="outline" onClick={() => navigate("/package-manager")}>
@@ -41,6 +61,17 @@ export const NewPackageForm = () => {
             <Button onClick={() => setIsEditing(true)}>Edit Package</Button>
           )}
         </div>
+      </div>
+
+      <div className="mb-6">
+        <p className="text-sm font-medium">
+          Balance: <span className={cn(
+            "font-bold",
+            isProfit ? "text-green-600" : "text-red-600"
+          )}>
+            {formatAmount(balance)}
+          </span>
+        </p>
       </div>
 
       <div className="space-y-6">
