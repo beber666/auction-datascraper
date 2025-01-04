@@ -6,44 +6,17 @@ import { useNavigate } from "react-router-dom";
 import { PackageItemsTable } from "./PackageItemsTable";
 import { usePackageItems } from "@/hooks/usePackageItems";
 import { useAmountFormatter } from "@/hooks/useAmountFormatter";
-
-// Mock data for testing
-const mockItems = [
-  {
-    id: 1,
-    name: "Dragon Ball Figure",
-    productUrl: "https://zenmarket.jp/product123",
-    platformId: "ZM123456",
-    proxyFee: 300,
-    price: 5000,
-    localShippingPrice: 800,
-    weight: 0.5,
-    internationalShippingShare: 1200,
-    customsFee: 500,
-    totalPrice: 7800,
-    resalePrice: 12000,
-    resaleComment: "Good condition, limited edition",
-  },
-  {
-    id: 2,
-    name: "One Piece Manga Vol.1",
-    productUrl: "https://zenmarket.jp/product456",
-    platformId: "ZM789012",
-    proxyFee: 300,
-    price: 800,
-    localShippingPrice: 500,
-    weight: 0.3,
-    internationalShippingShare: 800,
-    customsFee: 200,
-    totalPrice: 2600,
-    resalePrice: 4000,
-    resaleComment: "First edition",
-  },
-];
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { CalendarIcon } from "lucide-react";
+import { format } from "date-fns";
+import { cn } from "@/lib/utils";
 
 export const NewPackageForm = () => {
   const navigate = useNavigate();
   const [packageName, setPackageName] = useState("");
+  const [sendDate, setSendDate] = useState<Date>();
+  const [trackingNumber, setTrackingNumber] = useState("");
   const { items, handleDeleteItem, handleUpdateItem } = usePackageItems(mockItems);
   const { formatAmount } = useAmountFormatter();
 
@@ -60,15 +33,52 @@ export const NewPackageForm = () => {
       </div>
 
       <div className="space-y-6">
-        <div>
-          <Label htmlFor="package-name">Package Name</Label>
-          <Input
-            id="package-name"
-            value={packageName}
-            onChange={(e) => setPackageName(e.target.value)}
-            placeholder="Enter package name"
-            className="max-w-md"
-          />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div>
+            <Label htmlFor="package-name">Package Name</Label>
+            <Input
+              id="package-name"
+              value={packageName}
+              onChange={(e) => setPackageName(e.target.value)}
+              placeholder="Enter package name"
+            />
+          </div>
+
+          <div>
+            <Label>Send Date</Label>
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className={cn(
+                    "w-full justify-start text-left font-normal",
+                    !sendDate && "text-muted-foreground"
+                  )}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {sendDate ? format(sendDate, "PPP") : "Select date"}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="start">
+                <Calendar
+                  mode="single"
+                  selected={sendDate}
+                  onSelect={setSendDate}
+                  initialFocus
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
+
+          <div>
+            <Label htmlFor="tracking-number">Tracking Number</Label>
+            <Input
+              id="tracking-number"
+              value={trackingNumber}
+              onChange={(e) => setTrackingNumber(e.target.value)}
+              placeholder="Enter tracking number"
+            />
+          </div>
         </div>
 
         <div className="border rounded-lg">
