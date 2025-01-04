@@ -1,7 +1,7 @@
 import { TableCell, TableRow } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { PackageItem } from "./types";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { PackageItemActions } from "./PackageItemActions";
 
 interface PackageItemRowProps {
@@ -13,6 +13,17 @@ interface PackageItemRowProps {
 
 export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: PackageItemRowProps) => {
   const [isEditing, setIsEditing] = useState(false);
+
+  // Set isEditing to true if this is a new item (all fields empty)
+  useEffect(() => {
+    const isNewItem = !item.name && !item.productUrl && !item.platformId && 
+                     item.proxyFee === 0 && item.price === 0 && item.localShippingPrice === 0 &&
+                     item.weight === 0 && item.internationalShippingShare === 0 && item.customsFee === 0 &&
+                     item.resalePrice === 0 && !item.resaleComment;
+    if (isNewItem) {
+      setIsEditing(true);
+    }
+  }, [item]);
 
   const calculateTotalPrice = (item: PackageItem) => {
     return item.proxyFee + item.price + item.localShippingPrice + 
