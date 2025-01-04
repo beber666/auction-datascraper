@@ -50,7 +50,7 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditi
     value: string | number,
     type: "text" | "number" = "text"
   ) => {
-    if (isRowEditing && isEditing) {
+    if ((isRowEditing || isEditing) && isEditing) {
       return (
         <Input 
           type={type}
