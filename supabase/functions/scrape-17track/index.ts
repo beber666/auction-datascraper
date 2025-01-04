@@ -1,81 +1,83 @@
-import "https://deno.land/x/xhr@0.1.0/mod.ts";
-import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import * as cheerio from "https://esm.sh/cheerio@1.0.0-rc.12";
-
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-};
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response(null, { headers: corsHeaders });
-  }
-
   try {
-    const { trackingNumber } = await req.json();
-    console.log('Scraping tracking number:', trackingNumber);
-
-    const url = `https://t.17track.net/en#nums=${trackingNumber}`;
-    console.log('Fetching URL:', url);
-
-    const response = await fetch(url);
-    const html = await response.text();
-    console.log('Received HTML response');
+    const { trackingNumber } = await req.json()
     
-    const $ = cheerio.load(html);
-    const trackingInfo = [];
-    
-    // Get the tracking details from the copy button's data-clipboard-text attribute
-    const trackingDetails = $('#cl-details').attr('data-clipboard-text');
-    console.log('Found tracking details:', trackingDetails);
-    
-    if (trackingDetails) {
-      // Parse the tracking events from the formatted text
-      const lines = trackingDetails.split('\n');
-      
-      // Skip header lines and footer
-      const events = lines.slice(3, -2).filter(line => line.trim() !== '');
-      
-      events.forEach(event => {
-        const match = event.match(/^(\d{4}-\d{2}-\d{2} \d{2}:\d{2}) (.+)$/);
-        if (match) {
-          trackingInfo.push({
-            time: match[1],
-            event: match[2],
-          });
-        }
-      });
+    if (!trackingNumber) {
+      return new Response(
+        JSON.stringify({ success: false, error: "Tracking number is required" }),
+        { headers: { "Content-Type": "application/json" } }
+      )
     }
 
-    console.log('Parsed tracking info:', trackingInfo);
+    console.log('Scraping tracking number:', trackingNumber);
 
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        trackingInfo,
-      }),
-      { 
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+    // Launch browser
+    const browser = await puppeteer.launch({
+      args: ['--no-sandbox', '--disable-setuid-sandbox']
+    });
+    
+    try {
+      const page = await browser.newPage();
+      
+      // Navigate to 17track
+      await page.goto(`https://t.17track.net/en#nums=${trackingNumber}`, {
+        waitUntil: 'networkidle0',
+        timeout: 30000
+      });
+
+      // Wait for the tracking details to load
+      await page.waitForSelector('#cl-details', { timeout: 30000 });
+
+      // Get tracking details from the copy button
+      const trackingDetails = await page.evaluate(() => {
+        const button = document.querySelector('#cl-details');
+        return button?.getAttribute('data-clipboard-text') || '';
+      });
+
+      console.log('Found tracking details:', trackingDetails);
+
+      const trackingInfo = [];
+      
+      if (trackingDetails) {
+        // Split the text into lines and process each event
+        const lines = trackingDetails.split('\n');
+        lines.forEach(line => {
+          // Look for lines that start with a date (YYYY-MM-DD)
+          if (line.match(/^\d{4}-\d{2}-\d{2}/)) {
+            const [dateTime, ...eventParts] = line.split(' ');
+            trackingInfo.push({
+              time: dateTime,
+              event: eventParts.join(' ')
+            });
+          }
+        });
+      }
+
+      console.log('Parsed tracking info:', trackingInfo);
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          trackingInfo 
+        }),
+        { headers: { "Content-Type": "application/json" } }
+      )
+
+    } finally {
+      await browser.close();
+    }
+
   } catch (error) {
-    console.error('Error scraping tracking info:', error);
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
         error: error.message 
       }),
-      { 
-        status: 500,
-        headers: { 
-          ...corsHeaders,
-          'Content-Type': 'application/json',
-        },
-      },
-    );
+      { headers: { "Content-Type": "application/json" } }
+    )
   }
-});
+})
