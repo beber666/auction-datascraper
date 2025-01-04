@@ -60,9 +60,39 @@ export const usePackages = () => {
     },
   });
 
+  const deletePackage = useMutation({
+    mutationFn: async (packageId: string) => {
+      // Supprimer d'abord les items associés
+      const { error: itemsError } = await supabase
+        .from('package_items')
+        .delete()
+        .eq('package_id', packageId);
+
+      if (itemsError) {
+        toast.error("Failed to delete package items");
+        throw itemsError;
+      }
+
+      // Puis supprimer le package
+      const { error: packageError } = await supabase
+        .from('packages')
+        .delete()
+        .eq('id', packageId);
+
+      if (packageError) {
+        toast.error("Failed to delete package");
+        throw packageError;
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
+    },
+  });
+
   return {
     packages,
     isLoading,
     createPackage,
+    deletePackage,
   };
 };

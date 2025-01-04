@@ -31,6 +31,7 @@ function App() {
                     <Route path="/zen-scraper" element={<ZenScraper />} />
                     <Route path="/package-manager" element={<PackageManager />} />
                     <Route path="/package-manager/new" element={<PackageDetails />} />
+                    <Route path="/package-manager/:id" element={<PackageDetails />} />
                   </Routes>
                 </main>
               </div>
