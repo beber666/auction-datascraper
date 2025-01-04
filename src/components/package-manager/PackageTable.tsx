@@ -26,6 +26,7 @@ import {
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
 import { usePackageItems } from "@/hooks/usePackageItems";
+import { useMemo } from "react";
 
 export const PackageTable = () => {
   const { packages, isLoading, deletePackage } = usePackages();
@@ -67,6 +68,30 @@ export const PackageTable = () => {
     }
   };
 
+  // Pré-calculer tous les totaux pour chaque package
+  const packageTotals = useMemo(() => {
+    if (!packages) return {};
+
+    const totals: Record<string, { totalCost: number; totalResale: number; balance: number }> = {};
+
+    packages.forEach(pkg => {
+      const { items } = usePackageItems(pkg.id);
+      const totalResale = items.reduce((sum, item) => sum + (item.resale_price || 0), 0);
+      const totalCost = items.reduce((sum, item) => 
+        sum + (item.proxy_fee || 0) + (item.price || 0) + 
+        (item.local_shipping_price || 0) + (item.international_shipping_share || 0) + 
+        (item.customs_fee || 0), 0);
+      
+      totals[pkg.id] = {
+        totalCost,
+        totalResale,
+        balance: totalResale - totalCost
+      };
+    });
+
+    return totals;
+  }, [packages]);
+
   if (isLoading) {
     return <div>Loading...</div>;
   }
@@ -86,13 +111,7 @@ export const PackageTable = () => {
       </TableHeader>
       <TableBody>
         {packages?.map((pkg) => {
-          const { items } = usePackageItems(pkg.id);
-          const totalResalePrice = items.reduce((sum, item) => sum + (item.resale_price || 0), 0);
-          const totalCost = items.reduce((sum, item) => 
-            sum + (item.proxy_fee || 0) + (item.price || 0) + 
-            (item.local_shipping_price || 0) + (item.international_shipping_share || 0) + 
-            (item.customs_fee || 0), 0);
-          const balance = totalResalePrice - totalCost;
+          const totals = packageTotals[pkg.id] || { totalCost: 0, totalResale: 0, balance: 0 };
 
           return (
             <TableRow 
@@ -108,16 +127,16 @@ export const PackageTable = () => {
                 {pkg.tracking_number || <span className="text-muted-foreground">Not shipped yet</span>}
               </TableCell>
               <TableCell className="text-right">
-                {formatAmount(totalCost)}
+                {formatAmount(totals.totalCost)}
               </TableCell>
               <TableCell className="text-right">
-                {formatAmount(totalResalePrice)}
+                {formatAmount(totals.totalResale)}
               </TableCell>
               <TableCell className={cn(
                 "text-right font-medium",
-                balance >= 0 ? "text-green-600" : "text-red-600"
+                totals.balance >= 0 ? "text-green-600" : "text-red-600"
               )}>
-                {formatAmount(balance)}
+                {formatAmount(totals.balance)}
               </TableCell>
               <TableCell>
                 <AlertDialog>
