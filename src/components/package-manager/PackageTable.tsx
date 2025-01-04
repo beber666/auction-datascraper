@@ -6,63 +6,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { usePackages } from "@/hooks/usePackages";
 import { useUserPreferences } from "@/hooks/useUserPreferences";
-import { useEffect } from "react";
-
-// Mock data structure updated to include items with their total prices
-const mockPackages = [
-  {
-    id: 1,
-    name: "Summer Collection 2024",
-    itemCount: 3,
-    sendDate: "2024-03-15",
-    tracking: "JP123456789",
-    items: [
-      { totalPrice: 5000 },
-      { totalPrice: 7000 },
-      { totalPrice: 3000 },
-    ],
-  },
-  {
-    id: 2,
-    name: "Anime Figures Lot",
-    itemCount: 5,
-    sendDate: "2024-03-20",
-    tracking: "JP987654321",
-    items: [
-      { totalPrice: 8000 },
-      { totalPrice: 6000 },
-      { totalPrice: 4000 },
-      { totalPrice: 3500 },
-      { totalPrice: 3500 },
-    ],
-  },
-  {
-    id: 3,
-    name: "Collectibles Bundle",
-    itemCount: 2,
-    sendDate: "2024-03-25",
-    tracking: null,
-    items: [
-      { totalPrice: 5000 },
-      { totalPrice: 3000 },
-    ],
-  },
-];
-
-const currencySymbols: Record<string, string> = {
-  JPY: "¥",
-  EUR: "€",
-  USD: "$",
-  GBP: "£",
-};
+import { format } from "date-fns";
 
 export const PackageTable = () => {
-  const { currency, loadUserPreferences } = useUserPreferences();
+  const { packages, isLoading } = usePackages();
+  const { currency } = useUserPreferences();
 
-  useEffect(() => {
-    loadUserPreferences();
-  }, []);
+  const currencySymbols: Record<string, string> = {
+    JPY: "¥",
+    EUR: "€",
+    USD: "$",
+    GBP: "£",
+  };
 
   const formatAmount = (amount: number) => {
     const exchangeRates: Record<string, number> = {
@@ -81,32 +38,32 @@ export const PackageTable = () => {
     })}`;
   };
 
-  const calculatePackageTotal = (items: { totalPrice: number }[]) => {
-    return items.reduce((sum, item) => sum + item.totalPrice, 0);
-  };
+  if (isLoading) {
+    return <div>Loading...</div>;
+  }
 
   return (
     <Table>
       <TableHeader>
         <TableRow>
           <TableHead className="w-[300px]">Package Name</TableHead>
-          <TableHead className="w-[100px] text-center">Items</TableHead>
           <TableHead className="w-[150px]">Send Date</TableHead>
           <TableHead className="w-[150px]">Tracking</TableHead>
           <TableHead className="w-[200px] text-right">Total Amount ({currencySymbols[currency]})</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
-        {mockPackages.map((pkg) => (
+        {packages?.map((pkg) => (
           <TableRow key={pkg.id}>
             <TableCell className="font-medium">{pkg.name}</TableCell>
-            <TableCell className="text-center">{pkg.itemCount}</TableCell>
-            <TableCell>{pkg.sendDate}</TableCell>
             <TableCell>
-              {pkg.tracking || <span className="text-muted-foreground">Not shipped yet</span>}
+              {pkg.send_date ? format(new Date(pkg.send_date), 'PPP') : 'Not set'}
+            </TableCell>
+            <TableCell>
+              {pkg.tracking_number || <span className="text-muted-foreground">Not shipped yet</span>}
             </TableCell>
             <TableCell className="text-right">
-              {formatAmount(calculatePackageTotal(pkg.items))}
+              {formatAmount(pkg.total_items_cost)}
             </TableCell>
           </TableRow>
         ))}

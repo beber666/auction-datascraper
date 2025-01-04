@@ -113,6 +113,101 @@ export type Database = {
         }
         Relationships: []
       }
+      package_items: {
+        Row: {
+          created_at: string
+          customs_fee: number | null
+          id: string
+          international_shipping_share: number | null
+          local_shipping_price: number | null
+          name: string
+          package_id: string
+          platform_id: string | null
+          price: number | null
+          product_url: string | null
+          proxy_fee: number | null
+          resale_comment: string | null
+          resale_price: number | null
+          updated_at: string
+          weight: number | null
+        }
+        Insert: {
+          created_at?: string
+          customs_fee?: number | null
+          id?: string
+          international_shipping_share?: number | null
+          local_shipping_price?: number | null
+          name: string
+          package_id: string
+          platform_id?: string | null
+          price?: number | null
+          product_url?: string | null
+          proxy_fee?: number | null
+          resale_comment?: string | null
+          resale_price?: number | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Update: {
+          created_at?: string
+          customs_fee?: number | null
+          id?: string
+          international_shipping_share?: number | null
+          local_shipping_price?: number | null
+          name?: string
+          package_id?: string
+          platform_id?: string | null
+          price?: number | null
+          product_url?: string | null
+          proxy_fee?: number | null
+          resale_comment?: string | null
+          resale_price?: number | null
+          updated_at?: string
+          weight?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "package_items_package_id_fkey"
+            columns: ["package_id"]
+            isOneToOne: false
+            referencedRelation: "packages"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      packages: {
+        Row: {
+          created_at: string
+          id: string
+          name: string
+          send_date: string | null
+          total_items_cost: number | null
+          tracking_number: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          name: string
+          send_date?: string | null
+          total_items_cost?: number | null
+          tracking_number?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          name?: string
+          send_date?: string | null
+          total_items_cost?: number | null
+          tracking_number?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           auto_refresh: boolean | null
