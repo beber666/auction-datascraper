@@ -6,6 +6,7 @@ import {
   TableHead,
   TableHeader,
   TableRow,
+  TableFooter,
 } from "@/components/ui/table";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -75,6 +76,29 @@ export const NewPackageForm = () => {
       maximumFractionDigits: currency === 'JPY' ? 0 : 2,
     })}`;
   };
+
+  // Calculate totals
+  const totals = mockItems.reduce((acc, item) => {
+    return {
+      proxyFee: acc.proxyFee + item.proxyFee,
+      price: acc.price + item.price,
+      localShippingPrice: acc.localShippingPrice + item.localShippingPrice,
+      weight: acc.weight + item.weight,
+      internationalShippingShare: acc.internationalShippingShare + item.internationalShippingShare,
+      customsFee: acc.customsFee + item.customsFee,
+      totalPrice: acc.totalPrice + item.totalPrice,
+      resalePrice: acc.resalePrice + item.resalePrice,
+    };
+  }, {
+    proxyFee: 0,
+    price: 0,
+    localShippingPrice: 0,
+    weight: 0,
+    internationalShippingShare: 0,
+    customsFee: 0,
+    totalPrice: 0,
+    resalePrice: 0,
+  });
 
   return (
     <div className="container mx-auto py-6">
@@ -146,6 +170,20 @@ export const NewPackageForm = () => {
                   </TableRow>
                 ))}
               </TableBody>
+              <TableFooter>
+                <TableRow className="font-medium">
+                  <TableCell colSpan={3}>Total</TableCell>
+                  <TableCell className="text-right">{formatAmount(totals.proxyFee)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(totals.price)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(totals.localShippingPrice)}</TableCell>
+                  <TableCell className="text-right">{totals.weight.toFixed(2)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(totals.internationalShippingShare)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(totals.customsFee)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(totals.totalPrice)}</TableCell>
+                  <TableCell className="text-right">{formatAmount(totals.resalePrice)}</TableCell>
+                  <TableCell></TableCell>
+                </TableRow>
+              </TableFooter>
             </Table>
           </div>
         </div>
