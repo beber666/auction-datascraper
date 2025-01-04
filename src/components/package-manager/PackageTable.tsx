@@ -25,6 +25,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { usePackageItems } from "@/hooks/usePackageItems";
 
 export const PackageTable = () => {
   const { packages, isLoading, deletePackage } = usePackages();
@@ -85,7 +86,14 @@ export const PackageTable = () => {
       </TableHeader>
       <TableBody>
         {packages?.map((pkg) => {
-          const balance = pkg.total_resale_price - pkg.total_items_cost;
+          const { items } = usePackageItems(pkg.id);
+          const totalResalePrice = items.reduce((sum, item) => sum + (item.resale_price || 0), 0);
+          const totalCost = items.reduce((sum, item) => 
+            sum + (item.proxy_fee || 0) + (item.price || 0) + 
+            (item.local_shipping_price || 0) + (item.international_shipping_share || 0) + 
+            (item.customs_fee || 0), 0);
+          const balance = totalResalePrice - totalCost;
+
           return (
             <TableRow 
               key={pkg.id} 
@@ -100,10 +108,10 @@ export const PackageTable = () => {
                 {pkg.tracking_number || <span className="text-muted-foreground">Not shipped yet</span>}
               </TableCell>
               <TableCell className="text-right">
-                {formatAmount(pkg.total_items_cost)}
+                {formatAmount(totalCost)}
               </TableCell>
               <TableCell className="text-right">
-                {formatAmount(pkg.total_resale_price)}
+                {formatAmount(totalResalePrice)}
               </TableCell>
               <TableCell className={cn(
                 "text-right font-medium",
