@@ -8,70 +8,21 @@ import { usePackageItems } from "@/hooks/usePackageItems";
 import { useAmountFormatter } from "@/hooks/useAmountFormatter";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, ExternalLink, Search } from "lucide-react";
+import { CalendarIcon, ExternalLink } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
-import { supabase } from "@/integrations/supabase/client";
-import { useToast } from "@/hooks/use-toast";
-import { TrackingEvent, TrackingEvents } from "./TrackingEvents";
 
 export const NewPackageForm = () => {
   const navigate = useNavigate();
   const [packageName, setPackageName] = useState("");
   const [sendDate, setSendDate] = useState<Date>();
   const [trackingNumber, setTrackingNumber] = useState("");
-  const [trackingUrl, setTrackingUrl] = useState<string>("");
-  const [trackingEvents, setTrackingEvents] = useState<TrackingEvent[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
   const { items, handleDeleteItem, handleUpdateItem } = usePackageItems([]);
   const { formatAmount } = useAmountFormatter();
-  const { toast } = useToast();
-
-  const handleTrackingLookup = async () => {
-    if (!trackingNumber) {
-      toast({
-        title: "Error",
-        description: "Please enter a tracking number",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('scrape-parcelsapp', {
-        body: { trackingNumber },
-      });
-
-      console.log('Response from scrape-parcelsapp:', { data, error });
-
-      if (error) throw error;
-
-      if (data.success) {
-        setTrackingUrl(data.trackingUrl);
-        setTrackingEvents(data.events);
-        toast({
-          title: "Success",
-          description: `Found ${data.events.length} tracking events`,
-        });
-      } else {
-        throw new Error('Failed to fetch tracking information');
-      }
-    } catch (error) {
-      console.error('Error fetching tracking info:', error);
-      toast({
-        title: "Error",
-        description: "Failed to fetch tracking information",
-        variant: "destructive",
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
 
   const openTrackingUrl = () => {
-    if (trackingUrl) {
-      window.open(trackingUrl, '_blank');
+    if (trackingNumber) {
+      window.open(`https://parcelsapp.com/en/tracking/${trackingNumber}`, '_blank');
     }
   };
 
@@ -134,15 +85,7 @@ export const NewPackageForm = () => {
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="Enter tracking number"
               />
-              <Button 
-                variant="outline" 
-                size="icon"
-                onClick={handleTrackingLookup}
-                disabled={isLoading}
-              >
-                <Search className="h-4 w-4" />
-              </Button>
-              {trackingUrl && (
+              {trackingNumber && (
                 <Button
                   variant="outline"
                   size="icon"
@@ -167,10 +110,6 @@ export const NewPackageForm = () => {
         </div>
 
         <Button className="w-full">+ Add Item</Button>
-
-        {trackingEvents.length > 0 && (
-          <TrackingEvents events={trackingEvents} />
-        )}
       </div>
     </div>
   );
