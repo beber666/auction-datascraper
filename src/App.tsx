@@ -14,9 +14,9 @@ function App() {
     <Router>
       <SidebarProvider>
         <div className="min-h-screen bg-background">
-          <div className="flex w-full">
+          <div className="flex">
             <AppSidebar />
-            <main className="flex-1">
+            <main className="flex-1 overflow-x-auto">
               <Routes>
                 <Route path="/" element={<Index />} />
                 <Route path="/account" element={<Account />} />

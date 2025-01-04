@@ -9,14 +9,14 @@ const PackageManager = () => {
 
   if (isAddingPackage) {
     return (
-      <div className="flex-1 overflow-x-auto">
+      <div className="w-full min-w-0">
         <NewPackageForm />
       </div>
     );
   }
 
   return (
-    <div className="flex-1 overflow-x-auto">
+    <div className="w-full min-w-0">
       <div className="container mx-auto py-6">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-3xl font-bold tracking-tight">Package Manager</h2>
