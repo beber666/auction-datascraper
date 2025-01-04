@@ -16,16 +16,18 @@ function App() {
         <div className="min-h-screen bg-background">
           <div className="flex">
             <AppSidebar />
-            <main className="flex-1 overflow-x-auto">
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route path="/account" element={<Account />} />
-                <Route path="/login" element={<Login />} />
-                <Route path="/tools" element={<Tools />} />
-                <Route path="/zen-scraper" element={<ZenScraper />} />
-                <Route path="/package-manager" element={<PackageManager />} />
-              </Routes>
-            </main>
+            <div className="flex-1 min-w-0">
+              <main className="w-full overflow-x-auto">
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/account" element={<Account />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/tools" element={<Tools />} />
+                  <Route path="/zen-scraper" element={<ZenScraper />} />
+                  <Route path="/package-manager" element={<PackageManager />} />
+                </Routes>
+              </main>
+            </div>
           </div>
         </div>
       </SidebarProvider>
