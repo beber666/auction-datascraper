@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import puppeteer from "https://deno.land/x/puppeteer@16.2.0/mod.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -21,57 +22,92 @@ serve(async (req) => {
       );
     }
 
-    console.log('Fetching tracking info for:', trackingNumber);
+    console.log('Scraping tracking number:', trackingNumber);
 
-    const response = await fetch(`https://t.17track.net/restapi/track`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36',
-        'Accept': 'application/json',
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Origin': 'https://t.17track.net',
-        'Referer': 'https://t.17track.net/',
-      },
-      body: JSON.stringify({
-        "data": [{
-          "num": trackingNumber,
-          "fc": 0,
-          "sc": 0
-        }],
-        "guid": "",
-        "timeZoneOffset": -60
-      })
+    // Launch browser with additional settings
+    const browser = await puppeteer.launch({
+      args: [
+        '--no-sandbox',
+        '--disable-setuid-sandbox',
+        '--disable-dev-shm-usage',
+        '--disable-accelerated-2d-canvas',
+        '--disable-gpu',
+        '--window-size=1920x1080'
+      ]
     });
+    
+    try {
+      const page = await browser.newPage();
+      
+      // Set a Mac Chrome user agent
+      await page.setUserAgent('Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36');
+      
+      // Set viewport
+      await page.setViewport({
+        width: 1920,
+        height: 1080
+      });
 
-    if (!response.ok) {
-      console.error('API response not OK:', response.status, response.statusText);
-      throw new Error('Failed to fetch tracking data');
+      console.log('Navigating to 17track...');
+      
+      // Navigate to 17track with additional options
+      await page.goto(`https://t.17track.net/en#nums=${trackingNumber}`, {
+        waitUntil: 'networkidle0',
+        timeout: 60000
+      });
+
+      console.log('Waiting for tracking details to load...');
+
+      // Wait longer for the content to load
+      await page.waitForSelector('#cl-details', { timeout: 60000 });
+      
+      // Add a small delay to ensure dynamic content is loaded
+      await new Promise(resolve => setTimeout(resolve, 5000));
+
+      console.log('Extracting tracking details...');
+
+      // Get tracking details with improved selector
+      const trackingInfo = await page.evaluate(() => {
+        const events = [];
+        const eventElements = document.querySelectorAll('[class*="trk-card-content"]');
+        
+        eventElements.forEach(element => {
+          const timeElement = element.querySelector('[class*="time"]');
+          const statusElement = element.querySelector('[class*="status"]');
+          
+          if (timeElement && statusElement) {
+            events.push({
+              time: timeElement.textContent?.trim() || '',
+              event: statusElement.textContent?.trim() || ''
+            });
+          }
+        });
+        
+        return events;
+      });
+
+      console.log('Found tracking events:', trackingInfo);
+
+      if (trackingInfo.length === 0) {
+        console.log('No tracking events found, might be a detection issue');
+        throw new Error('No tracking events found');
+      }
+
+      await browser.close();
+
+      return new Response(
+        JSON.stringify({ 
+          success: true, 
+          trackingInfo 
+        }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+
+    } catch (error) {
+      console.error('Error during scraping:', error);
+      await browser.close();
+      throw error;
     }
-
-    const data = await response.json();
-    console.log('17track API response:', data);
-
-    if (!data.ret || data.ret !== 1 || !data.dat?.[0]?.track?.z0) {
-      console.error('Invalid tracking data received:', data);
-      throw new Error('No tracking data found');
-    }
-
-    // Transform the tracking events into our format
-    const trackingInfo = data.dat[0].track.z0.map(event => ({
-      time: new Date(event.a * 1000).toLocaleString(),
-      event: event.z
-    }));
-
-    console.log('Transformed tracking events:', trackingInfo);
-
-    return new Response(
-      JSON.stringify({ 
-        success: true, 
-        trackingInfo 
-      }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" } }
-    );
 
   } catch (error) {
     console.error('Error:', error);
