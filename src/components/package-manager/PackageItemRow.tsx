@@ -9,21 +9,29 @@ interface PackageItemRowProps {
   onDelete: (id: number) => void;
   onUpdate: (id: number, field: keyof PackageItem, value: string | number) => void;
   formatAmount: (amount: number) => string;
+  isEditing: boolean;
 }
 
-export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: PackageItemRowProps) => {
-  const [isEditing, setIsEditing] = useState(false);
+export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount, isEditing }: PackageItemRowProps) => {
+  const [isRowEditing, setIsRowEditing] = useState(false);
 
-  // Set isEditing to true if this is a new item (all fields empty)
+  // Set isRowEditing to true if this is a new item (all fields empty)
   useEffect(() => {
     const isNewItem = !item.name && !item.productUrl && !item.platformId && 
                      item.proxyFee === 0 && item.price === 0 && item.localShippingPrice === 0 &&
                      item.weight === 0 && item.internationalShippingShare === 0 && item.customsFee === 0 &&
                      item.resalePrice === 0 && !item.resaleComment;
-    if (isNewItem) {
-      setIsEditing(true);
+    if (isNewItem && isEditing) {
+      setIsRowEditing(true);
     }
-  }, [item]);
+  }, [item, isEditing]);
+
+  // Reset row editing state when global editing state changes
+  useEffect(() => {
+    if (!isEditing) {
+      setIsRowEditing(false);
+    }
+  }, [isEditing]);
 
   const calculateTotalPrice = (item: PackageItem) => {
     return item.proxyFee + item.price + item.localShippingPrice + 
@@ -32,7 +40,7 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: Packa
 
   const handleNumberChange = (field: keyof PackageItem, value: string) => {
     const numValue = value === '' ? 0 : parseFloat(value);
-    if (!isNaN(numValue) && numValue >= 0) { // Added check for non-negative values
+    if (!isNaN(numValue) && numValue >= 0) {
       onUpdate(item.id, field, numValue);
     }
   };
@@ -42,12 +50,12 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: Packa
     value: string | number,
     type: "text" | "number" = "text"
   ) => {
-    if (isEditing) {
+    if (isRowEditing && isEditing) {
       return (
         <Input 
           type={type}
           value={value}
-          min={type === "number" ? "0" : undefined} // Added min attribute for number inputs
+          min={type === "number" ? "0" : undefined}
           onChange={(e) => type === "number" 
             ? handleNumberChange(field, e.target.value)
             : onUpdate(item.id, field, e.target.value)
@@ -89,9 +97,9 @@ export const PackageItemRow = ({ item, onDelete, onUpdate, formatAmount }: Packa
       <TableCell>{renderEditableField('resaleComment', item.resaleComment)}</TableCell>
       <TableCell>
         <PackageItemActions
-          isEditing={isEditing}
-          onToggleEdit={() => setIsEditing(!isEditing)}
-          onDelete={() => onDelete(item.id)}
+          isEditing={isRowEditing && isEditing}
+          onToggleEdit={() => isEditing && setIsRowEditing(!isRowEditing)}
+          onDelete={() => isEditing && onDelete(item.id)}
         />
       </TableCell>
     </TableRow>

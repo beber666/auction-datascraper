@@ -14,6 +14,7 @@ import { cn } from "@/lib/utils";
 
 export const NewPackageForm = () => {
   const navigate = useNavigate();
+  const [isEditing, setIsEditing] = useState(true);
   const [packageName, setPackageName] = useState("");
   const [sendDate, setSendDate] = useState<Date>();
   const [trackingNumber, setTrackingNumber] = useState("");
@@ -34,7 +35,11 @@ export const NewPackageForm = () => {
           <Button variant="outline" onClick={() => navigate("/package-manager")}>
             Cancel
           </Button>
-          <Button>Save</Button>
+          {isEditing ? (
+            <Button onClick={() => setIsEditing(false)}>Save</Button>
+          ) : (
+            <Button variant="outline" onClick={() => setIsEditing(true)}>Edit</Button>
+          )}
         </div>
       </div>
 
@@ -47,6 +52,8 @@ export const NewPackageForm = () => {
               value={packageName}
               onChange={(e) => setPackageName(e.target.value)}
               placeholder="Enter package name"
+              readOnly={!isEditing}
+              className={!isEditing ? "bg-gray-100" : ""}
             />
           </div>
 
@@ -58,21 +65,25 @@ export const NewPackageForm = () => {
                   variant={"outline"}
                   className={cn(
                     "w-full justify-start text-left font-normal",
-                    !sendDate && "text-muted-foreground"
+                    !sendDate && "text-muted-foreground",
+                    !isEditing && "bg-gray-100 cursor-not-allowed"
                   )}
+                  disabled={!isEditing}
                 >
                   <CalendarIcon className="mr-2 h-4 w-4" />
                   {sendDate ? format(sendDate, "PPP") : "Select date"}
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="start">
-                <Calendar
-                  mode="single"
-                  selected={sendDate}
-                  onSelect={setSendDate}
-                  initialFocus
-                />
-              </PopoverContent>
+              {isEditing && (
+                <PopoverContent className="w-auto p-0" align="start">
+                  <Calendar
+                    mode="single"
+                    selected={sendDate}
+                    onSelect={setSendDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              )}
             </Popover>
           </div>
 
@@ -84,6 +95,8 @@ export const NewPackageForm = () => {
                 value={trackingNumber}
                 onChange={(e) => setTrackingNumber(e.target.value)}
                 placeholder="Enter tracking number"
+                readOnly={!isEditing}
+                className={!isEditing ? "bg-gray-100" : ""}
               />
               {trackingNumber && (
                 <Button
@@ -105,11 +118,14 @@ export const NewPackageForm = () => {
               onDeleteItem={handleDeleteItem}
               onUpdateItem={handleUpdateItem}
               formatAmount={formatAmount}
+              isEditing={isEditing}
             />
           </div>
         </div>
 
-        <Button className="w-full" onClick={handleAddItem}>+ Add Item</Button>
+        {isEditing && (
+          <Button className="w-full" onClick={handleAddItem}>+ Add Item</Button>
+        )}
       </div>
     </div>
   );
