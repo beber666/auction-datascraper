@@ -78,6 +78,7 @@ export const PackageTable = () => {
           <TableHead className="w-[150px]">Send Date</TableHead>
           <TableHead className="w-[150px]">Tracking</TableHead>
           <TableHead className="w-[200px] text-right">Total Amount ({currencySymbols[currency]})</TableHead>
+          <TableHead className="w-[200px] text-right">Balance ({currencySymbols[currency]})</TableHead>
           <TableHead className="w-[100px]">Actions</TableHead>
         </TableRow>
       </TableHeader>
@@ -97,6 +98,12 @@ export const PackageTable = () => {
             </TableCell>
             <TableCell className="text-right">
               {formatAmount(pkg.total_items_cost)}
+            </TableCell>
+            <TableCell className={cn(
+              "text-right font-medium",
+              pkg.total_resale_price - pkg.total_items_cost >= 0 ? "text-green-600" : "text-red-600"
+            )}>
+              {formatAmount(pkg.total_resale_price - pkg.total_items_cost)}
             </TableCell>
             <TableCell>
               <AlertDialog>
