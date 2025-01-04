@@ -13,6 +13,7 @@ import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { TrackingEvent, TrackingEvents } from "./TrackingEvents";
 
 export const NewPackageForm = () => {
   const navigate = useNavigate();
@@ -20,6 +21,7 @@ export const NewPackageForm = () => {
   const [sendDate, setSendDate] = useState<Date>();
   const [trackingNumber, setTrackingNumber] = useState("");
   const [trackingUrl, setTrackingUrl] = useState<string>("");
+  const [trackingEvents, setTrackingEvents] = useState<TrackingEvent[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const { items, handleDeleteItem, handleUpdateItem } = usePackageItems([]);
   const { formatAmount } = useAmountFormatter();
@@ -47,10 +49,10 @@ export const NewPackageForm = () => {
 
       if (data.success) {
         setTrackingUrl(data.trackingUrl);
-        console.log('HTML content length:', data.html.length);
+        setTrackingEvents(data.events);
         toast({
           title: "Success",
-          description: "Tracking information found",
+          description: `Found ${data.events.length} tracking events`,
         });
       } else {
         throw new Error('Failed to fetch tracking information');
@@ -165,6 +167,10 @@ export const NewPackageForm = () => {
         </div>
 
         <Button className="w-full">+ Add Item</Button>
+
+        {trackingEvents.length > 0 && (
+          <TrackingEvents events={trackingEvents} />
+        )}
       </div>
     </div>
   );
