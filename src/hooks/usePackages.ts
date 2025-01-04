@@ -8,6 +8,7 @@ export interface Package {
   send_date: string | null;
   tracking_number: string | null;
   total_items_cost: number;
+  total_resale_price: number;
   user_id: string;
 }
 
@@ -32,7 +33,7 @@ export const usePackages = () => {
   });
 
   const createPackage = useMutation({
-    mutationFn: async (newPackage: Omit<Package, 'id' | 'total_items_cost'>) => {
+    mutationFn: async (newPackage: Omit<Package, 'id' | 'total_items_cost' | 'total_resale_price'>) => {
       const { data: userData, error: userError } = await supabase.auth.getUser();
       if (userError) throw userError;
 

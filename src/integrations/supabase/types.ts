@@ -182,6 +182,7 @@ export type Database = {
           name: string
           send_date: string | null
           total_items_cost: number | null
+          total_resale_price: number | null
           tracking_number: string | null
           updated_at: string
           user_id: string
@@ -192,6 +193,7 @@ export type Database = {
           name: string
           send_date?: string | null
           total_items_cost?: number | null
+          total_resale_price?: number | null
           tracking_number?: string | null
           updated_at?: string
           user_id: string
@@ -202,6 +204,7 @@ export type Database = {
           name?: string
           send_date?: string | null
           total_items_cost?: number | null
+          total_resale_price?: number | null
           tracking_number?: string | null
           updated_at?: string
           user_id?: string
