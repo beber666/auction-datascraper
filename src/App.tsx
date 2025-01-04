@@ -9,6 +9,7 @@ import Login from "@/pages/Login";
 import Tools from "@/pages/Tools";
 import ZenScraper from "@/pages/ZenScraper";
 import PackageManager from "@/pages/PackageManager";
+import PackageDetails from "@/pages/PackageDetails";
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ function App() {
                     <Route path="/tools" element={<Tools />} />
                     <Route path="/zen-scraper" element={<ZenScraper />} />
                     <Route path="/package-manager" element={<PackageManager />} />
+                    <Route path="/package-manager/new" element={<PackageDetails />} />
                   </Routes>
                 </main>
               </div>
