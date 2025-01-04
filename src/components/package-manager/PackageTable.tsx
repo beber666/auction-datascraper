@@ -6,6 +6,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { useUserPreferences } from "@/hooks/useUserPreferences";
+import { useEffect } from "react";
 
 // Mock data for testing
 const mockPackages = [
@@ -35,7 +37,37 @@ const mockPackages = [
   },
 ];
 
+const currencySymbols: Record<string, string> = {
+  JPY: "¥",
+  EUR: "€",
+  USD: "$",
+  GBP: "£",
+};
+
 export const PackageTable = () => {
+  const { currency, loadUserPreferences } = useUserPreferences();
+
+  useEffect(() => {
+    loadUserPreferences();
+  }, []);
+
+  const formatAmount = (amount: number) => {
+    const exchangeRates: Record<string, number> = {
+      JPY: 1,
+      EUR: 0.0062,
+      USD: 0.0067,
+      GBP: 0.0053,
+    };
+
+    const convertedAmount = amount * exchangeRates[currency];
+    const symbol = currencySymbols[currency];
+
+    return `${symbol}${convertedAmount.toLocaleString(undefined, {
+      minimumFractionDigits: currency === 'JPY' ? 0 : 2,
+      maximumFractionDigits: currency === 'JPY' ? 0 : 2,
+    })}`;
+  };
+
   return (
     <div className="rounded-md border">
       <Table>
@@ -45,7 +77,7 @@ export const PackageTable = () => {
             <TableHead className="text-center">Items</TableHead>
             <TableHead>Send Date</TableHead>
             <TableHead>Tracking</TableHead>
-            <TableHead className="text-right">Total Amount (¥)</TableHead>
+            <TableHead className="text-right">Total Amount ({currencySymbols[currency]})</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -58,7 +90,7 @@ export const PackageTable = () => {
                 {pkg.tracking || <span className="text-muted-foreground">Not shipped yet</span>}
               </TableCell>
               <TableCell className="text-right">
-                {pkg.totalAmount.toLocaleString()}
+                {formatAmount(pkg.totalAmount)}
               </TableCell>
             </TableRow>
           ))}
