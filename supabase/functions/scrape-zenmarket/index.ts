@@ -13,7 +13,49 @@ serve(async (req) => {
   }
 
   try {
-    const { url } = await req.json()
+    const body = await req.json()
+    
+    // Handle price conversion
+    if (body.action === 'convert') {
+      const { amount, currency } = body;
+      
+      if (!amount || !currency) {
+        throw new Error('Missing amount or currency for conversion');
+      }
+
+      // For now, use a simple fixed conversion rate
+      // In a real app, you'd want to fetch live rates from an API
+      const rates = {
+        USD: 0.0068,
+        EUR: 0.0062,
+        GBP: 0.0054,
+      };
+
+      const rate = rates[currency] || 1;
+      const convertedAmount = amount * rate;
+      
+      // Format the converted price with currency symbol
+      const symbols = {
+        USD: '$',
+        EUR: '€',
+        GBP: '£',
+        JPY: '¥'
+      };
+      
+      const symbol = symbols[currency] || '¥';
+      const convertedPrice = `${symbol}${convertedAmount.toLocaleString(undefined, {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      })}`;
+
+      return new Response(
+        JSON.stringify({ convertedPrice }),
+        { headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Handle scraping
+    const { url } = body;
     
     if (!url || !url.includes('zenmarket.jp')) {
       return new Response(
@@ -83,7 +125,7 @@ serve(async (req) => {
     )
 
   } catch (error) {
-    console.error('Scraping error:', error)
+    console.error('Error:', error);
     return new Response(
       JSON.stringify({ error: error.message }),
       { 
