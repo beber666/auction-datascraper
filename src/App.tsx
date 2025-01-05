@@ -3,6 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { cn } from "@/lib/utils";
 import Index from "@/pages/Index";
 import Account from "@/pages/Account";
 import Login from "@/pages/Login";
