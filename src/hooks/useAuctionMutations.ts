@@ -14,20 +14,29 @@ export const useAuctionMutations = (language: string, currency: string) => {
   const { parseTimeRemaining } = useAuctionTime();
 
   const handleSubmit = async (url: string) => {
+    if (!url) {
+      toast({
+        title: "Error",
+        description: "Please provide a valid URL",
+        variant: "destructive",
+      });
+      return null;
+    }
+
     setIsLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
-
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('preferred_language')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    const userLanguage = profile?.preferred_language || language || 'en';
-    console.log('User language preference:', userLanguage);
+    if (!session) return null;
 
     try {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('preferred_language')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      const userLanguage = profile?.preferred_language || language || 'en';
+      console.log('User language preference:', userLanguage);
+
       const scrapedItem = await ScraperService.scrapeZenmarket(url);
       console.log('Scraped item:', {
         productName: scrapedItem.productName,
@@ -62,26 +71,24 @@ export const useAuctionMutations = (language: string, currency: string) => {
           end_time: endTime?.toISOString()
         }])
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 
-      if (savedItem) {
-        return {
-          id: savedItem.id,
-          url: savedItem.url,
-          productName: savedItem.product_name,
-          currentPrice: savedItem.current_price,
-          priceInJPY: savedItem.price_in_jpy,
-          numberOfBids: savedItem.number_of_bids,
-          timeRemaining: savedItem.time_remaining,
-          lastUpdated: new Date(savedItem.last_updated),
-          user_id: savedItem.user_id,
-          created_at: savedItem.created_at,
-          imageUrl: savedItem.image_url
-        };
-      }
-      return null;
+      return savedItem ? {
+        id: savedItem.id,
+        url: savedItem.url,
+        productName: savedItem.product_name,
+        currentPrice: savedItem.current_price,
+        priceInJPY: savedItem.price_in_jpy,
+        numberOfBids: savedItem.number_of_bids,
+        timeRemaining: savedItem.time_remaining,
+        lastUpdated: new Date(savedItem.last_updated),
+        user_id: savedItem.user_id,
+        created_at: savedItem.created_at,
+        imageUrl: savedItem.image_url
+      } : null;
+
     } catch (error) {
       console.error("Error adding auction:", error);
       toast({
@@ -89,13 +96,18 @@ export const useAuctionMutations = (language: string, currency: string) => {
         description: "Failed to fetch auction data",
         variant: "destructive",
       });
-      throw error;
+      return null;
     } finally {
       setIsLoading(false);
     }
   };
 
   const handleUpdate = async (item: AuctionItem) => {
+    if (!item?.url) {
+      console.error("Invalid item URL");
+      return null;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
     if (!session) return null;
 
@@ -116,27 +128,24 @@ export const useAuctionMutations = (language: string, currency: string) => {
           time_remaining: scrapedItem.timeRemaining,
           last_updated: new Date().toISOString(),
           end_time: endTime?.toISOString(),
-          image_url: scrapedItem.imageUrl // Ajout de l'URL de l'image dans la mise à jour
+          image_url: scrapedItem.imageUrl
         })
         .eq('id', item.id)
         .select()
-        .maybeSingle();
+        .single();
 
       if (error) throw error;
 
-      if (updatedItem) {
-        return {
-          ...item,
-          currentPrice: updatedItem.current_price,
-          priceInJPY: updatedItem.price_in_jpy,
-          numberOfBids: updatedItem.number_of_bids,
-          timeRemaining: updatedItem.time_remaining,
-          lastUpdated: new Date(updatedItem.last_updated),
-          imageUrl: updatedItem.image_url // Ajout de l'URL de l'image dans l'objet retourné
-        };
-      }
+      return updatedItem ? {
+        ...item,
+        currentPrice: updatedItem.current_price,
+        priceInJPY: updatedItem.price_in_jpy,
+        numberOfBids: updatedItem.number_of_bids,
+        timeRemaining: updatedItem.time_remaining,
+        lastUpdated: new Date(updatedItem.last_updated),
+        imageUrl: updatedItem.image_url
+      } : item;
 
-      return item;
     } catch (error) {
       console.error("Error updating auction:", error);
       return item;
