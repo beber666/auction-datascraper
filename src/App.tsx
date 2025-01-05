@@ -1,4 +1,4 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
 import { Toaster } from "@/components/ui/toaster";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/AppSidebar";
@@ -13,31 +13,45 @@ import PackageDetails from "@/pages/PackageDetails";
 
 const queryClient = new QueryClient();
 
+// Create a wrapper component to handle the conditional sidebar rendering
+const AppLayout = ({ children }: { children: React.ReactNode }) => {
+  const location = useLocation();
+  const isLoginPage = location.pathname === "/login";
+
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen bg-background">
+        <div className="flex">
+          {!isLoginPage && <AppSidebar />}
+          <div className={cn("flex-1 min-w-0", {
+            "w-full": isLoginPage
+          })}>
+            <main className="w-full overflow-x-auto">
+              {children}
+            </main>
+          </div>
+        </div>
+      </div>
+    </SidebarProvider>
+  );
+};
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <Router>
-        <SidebarProvider>
-          <div className="min-h-screen bg-background">
-            <div className="flex">
-              <AppSidebar />
-              <div className="flex-1 min-w-0">
-                <main className="w-full overflow-x-auto">
-                  <Routes>
-                    <Route path="/" element={<Index />} />
-                    <Route path="/account" element={<Account />} />
-                    <Route path="/login" element={<Login />} />
-                    <Route path="/tools" element={<Tools />} />
-                    <Route path="/zen-scraper" element={<ZenScraper />} />
-                    <Route path="/package-manager" element={<PackageManager />} />
-                    <Route path="/package-manager/new" element={<PackageDetails />} />
-                    <Route path="/package-manager/:id" element={<PackageDetails />} />
-                  </Routes>
-                </main>
-              </div>
-            </div>
-          </div>
-        </SidebarProvider>
+        <AppLayout>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/account" element={<Account />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/tools" element={<Tools />} />
+            <Route path="/zen-scraper" element={<ZenScraper />} />
+            <Route path="/package-manager" element={<PackageManager />} />
+            <Route path="/package-manager/new" element={<PackageDetails />} />
+            <Route path="/package-manager/:id" element={<PackageDetails />} />
+          </Routes>
+        </AppLayout>
         <Toaster />
       </Router>
     </QueryClientProvider>
