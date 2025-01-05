@@ -12,6 +12,7 @@ export interface AuctionItem {
   user_id: string;
   created_at: string;
   imageUrl?: string;
+  isLoading?: boolean;  // Added this property
 }
 
 export interface ScrapedItem {
@@ -50,6 +51,25 @@ export class ScraperService {
     } catch (error) {
       console.error('Error in scrapeZenmarket:', error);
       throw new Error('Failed to scrape auction data');
+    }
+  }
+
+  // Add the convertPrice method
+  static async convertPrice(priceInJPY: number, currency: string): Promise<string> {
+    try {
+      const { data, error } = await supabase.functions.invoke('scrape-zenmarket', {
+        body: { 
+          action: 'convert',
+          amount: priceInJPY,
+          currency: currency
+        }
+      });
+
+      if (error) throw error;
+      return data?.convertedPrice || `¥${priceInJPY.toLocaleString()}`;
+    } catch (error) {
+      console.error('Error converting price:', error);
+      return `¥${priceInJPY.toLocaleString()}`; // Fallback to JPY if conversion fails
     }
   }
 }
