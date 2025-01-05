@@ -21,17 +21,22 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-background">
-        <div className="flex">
-          {!isLoginPage && <AppSidebar />}
-          <div className={cn("flex-1 min-w-0", {
-            "w-full": isLoginPage
-          })}>
-            <main className="w-full overflow-x-auto">
+      <div className={cn("min-h-screen bg-background", {
+        "flex": isLoginPage
+      })}>
+        {!isLoginPage && (
+          <div className="flex">
+            <AppSidebar />
+            <main className="flex-1 overflow-x-auto">
               {children}
             </main>
           </div>
-        </div>
+        )}
+        {isLoginPage && (
+          <main className="w-full">
+            {children}
+          </main>
+        )}
       </div>
     </SidebarProvider>
   );
