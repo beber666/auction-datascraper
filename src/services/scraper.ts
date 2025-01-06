@@ -12,7 +12,7 @@ export interface AuctionItem {
   user_id: string;
   created_at: string;
   imageUrl?: string;
-  isLoading?: boolean;  // Added this property
+  isLoading?: boolean;
 }
 
 export interface ScrapedItem {
@@ -27,8 +27,20 @@ export interface ScrapedItem {
 export class ScraperService {
   static async scrapeZenmarket(url: string): Promise<ScrapedItem> {
     try {
+      // Validate URL before making the request
+      if (!url || !url.trim()) {
+        throw new Error('URL is required');
+      }
+
+      const cleanUrl = url.trim();
+      if (!cleanUrl.includes('zenmarket.jp')) {
+        throw new Error('Invalid Zenmarket URL');
+      }
+
+      console.log('Scraping URL:', cleanUrl);
+
       const { data, error } = await supabase.functions.invoke('scrape-zenmarket', {
-        body: { url }
+        body: { url: cleanUrl }
       });
 
       if (error) {
@@ -41,7 +53,7 @@ export class ScraperService {
       }
 
       return {
-        url,
+        url: cleanUrl,
         productName: data.productName || 'Unknown Product',
         priceInJPY: data.priceInJPY || 0,
         numberOfBids: data.numberOfBids || '0',
@@ -50,13 +62,16 @@ export class ScraperService {
       };
     } catch (error) {
       console.error('Error in scrapeZenmarket:', error);
-      throw new Error('Failed to scrape auction data');
+      throw error;
     }
   }
 
-  // Add the convertPrice method
   static async convertPrice(priceInJPY: number, currency: string): Promise<string> {
     try {
+      if (!priceInJPY || !currency) {
+        throw new Error('Price and currency are required');
+      }
+
       const { data, error } = await supabase.functions.invoke('scrape-zenmarket', {
         body: { 
           action: 'convert',

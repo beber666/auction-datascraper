@@ -14,7 +14,7 @@ export const useAuctionMutations = (language: string, currency: string) => {
   const { parseTimeRemaining } = useAuctionTime();
 
   const handleSubmit = async (url: string) => {
-    if (!url) {
+    if (!url?.trim()) {
       toast({
         title: "Error",
         description: "Please provide a valid URL",
@@ -25,7 +25,15 @@ export const useAuctionMutations = (language: string, currency: string) => {
 
     setIsLoading(true);
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return null;
+    if (!session) {
+      toast({
+        title: "Error",
+        description: "Please log in to add auctions",
+        variant: "destructive",
+      });
+      setIsLoading(false);
+      return null;
+    }
 
     try {
       const { data: profile } = await supabase
@@ -93,7 +101,7 @@ export const useAuctionMutations = (language: string, currency: string) => {
       console.error("Error adding auction:", error);
       toast({
         title: "Error",
-        description: "Failed to fetch auction data",
+        description: error.message || "Failed to fetch auction data",
         variant: "destructive",
       });
       return null;
