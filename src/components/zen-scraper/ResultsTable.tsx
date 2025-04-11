@@ -1,3 +1,4 @@
+
 import { Table, TableBody } from "@/components/ui/table";
 import { ScrapedItem, ZenScraperService } from "@/services/zenScraper";
 import { useToast } from "@/hooks/use-toast";
@@ -13,6 +14,8 @@ interface ResultsTableProps {
   sortColumn: keyof ScrapedItem | null;
   sortDirection: 'asc' | 'desc';
   onSort: (column: keyof ScrapedItem) => void;
+  isLoading: boolean;
+  onStopScraping?: () => void;
 }
 
 export const ResultsTable = ({ 
@@ -20,7 +23,9 @@ export const ResultsTable = ({
   scrapedPages, 
   sortColumn, 
   sortDirection, 
-  onSort 
+  onSort,
+  isLoading,
+  onStopScraping
 }: ResultsTableProps) => {
   const { toast } = useToast();
   const { translatedResults, getSortedResults } = useTableData(results);
@@ -76,6 +81,8 @@ export const ResultsTable = ({
         resultsCount={results.length}
         pagesCount={scrapedPages}
         onExport={handleExport}
+        isLoading={isLoading}
+        onStopScraping={onStopScraping}
       />
 
       <div className="border rounded-lg">

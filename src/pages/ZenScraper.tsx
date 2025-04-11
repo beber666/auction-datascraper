@@ -210,6 +210,8 @@ export default function ZenScraper() {
             sortColumn={sortColumn}
             sortDirection={sortDirection}
             onSort={handleSort}
+            isLoading={isLoading}
+            onStopScraping={handleStopScraping}
           />
         </>
       )}
