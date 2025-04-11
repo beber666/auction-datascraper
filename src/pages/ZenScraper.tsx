@@ -30,7 +30,7 @@ export default function ZenScraper() {
   const handleScrapeNextPage = async (url: string) => {
     if (!url) return;
     
-    // Check if we've reached the max pages limit
+    // Check if we've reached the max pages limit before starting to scrape next page
     if (maxPages !== null && scrapedPages >= maxPages) {
       toast({
         title: "Scraping complete",
@@ -45,31 +45,37 @@ export default function ZenScraper() {
       const { items, hasMorePages: morePages, nextPageUrl: newNextPageUrl } = 
         await ZenScraperService.scrapeNextPage(url);
       
+      // Update state with new items
       setResults(prevResults => [...prevResults, ...items]);
       setFilteredResults(prevResults => [...prevResults, ...items]);
-      setScrapedPages(prev => prev + 1);
+      const newPageCount = scrapedPages + 1;
+      setScrapedPages(newPageCount);
       setNextPageUrl(newNextPageUrl);
       setHasMorePages(morePages);
 
       toast({
         title: "Page scraped successfully",
-        description: `Added ${items.length} new items from page ${scrapedPages + 1}`,
+        description: `Added ${items.length} new items from page ${newPageCount}`,
       });
 
-      // Automatically scrape next page if available and we haven't reached max pages
-      if (morePages && newNextPageUrl && (maxPages === null || scrapedPages + 1 < maxPages)) {
+      // Check if we've reached the max pages limit after incrementing page count
+      if (maxPages !== null && newPageCount >= maxPages) {
+        toast({
+          title: "Scraping complete",
+          description: `Reached the limit of ${maxPages} pages`,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Only continue if we haven't reached max pages and there are more pages
+      if (morePages && newNextPageUrl) {
         // Add a small delay to avoid overwhelming the server
         setTimeout(() => {
           handleScrapeNextPage(newNextPageUrl);
         }, 2000); // 2 second delay between pages
       } else {
-        // Stop scraping if we've reached max pages or there are no more pages
-        if (maxPages !== null && scrapedPages + 1 >= maxPages) {
-          toast({
-            title: "Scraping complete",
-            description: `Reached the limit of ${maxPages} pages`,
-          });
-        } else if (!morePages) {
+        if (!morePages) {
           toast({
             title: "Scraping complete",
             description: "No more pages available",
@@ -98,6 +104,8 @@ export default function ZenScraper() {
     setHasMorePages(false);
     setMaxPages(pagesLimit);
 
+    console.log('Starting scrape with max pages limit:', pagesLimit);
+
     try {
       // Ensure we're using the /en/ version of the URL for the first page
       let scrapingUrl = url;
@@ -119,18 +127,23 @@ export default function ZenScraper() {
         description: `Found ${items.length} items on the first page`,
       });
 
-      // Only continue if we haven't reached the page limit (1 < pagesLimit)
-      if (morePages && newNextPageUrl && (pagesLimit === null || 1 < pagesLimit)) {
+      // If the limit is 1 page, stop here
+      if (pagesLimit !== null && pagesLimit <= 1) {
+        toast({
+          title: "Scraping complete",
+          description: `Reached the limit of ${pagesLimit} page`,
+        });
+        setIsLoading(false);
+        return;
+      }
+
+      // Only continue if we haven't reached the page limit and there are more pages
+      if (morePages && newNextPageUrl) {
         setTimeout(() => {
           handleScrapeNextPage(newNextPageUrl);
         }, 2000); // 2 second delay before starting next page
       } else {
-        if (pagesLimit !== null && pagesLimit <= 1) {
-          toast({
-            title: "Scraping complete",
-            description: `Reached the limit of ${pagesLimit} pages`,
-          });
-        } else if (!morePages) {
+        if (!morePages) {
           toast({
             title: "Scraping complete",
             description: "No more pages available",
