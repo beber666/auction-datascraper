@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { ZenScraperService, ScrapedItem } from '@/services/zenScraper';
@@ -15,6 +16,7 @@ export default function ZenScraper() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
   const [hasMorePages, setHasMorePages] = useState(false);
+  const [shouldStopScraping, setShouldStopScraping] = useState(false);
 
   const handleSort = (column: keyof ScrapedItem) => {
     if (sortColumn === column) {
@@ -25,8 +27,16 @@ export default function ZenScraper() {
     }
   };
 
+  const handleStopScraping = () => {
+    setShouldStopScraping(true);
+    toast({
+      title: "Stopping scraper",
+      description: "The scraper will stop after the current page completes",
+    });
+  };
+
   const handleScrapeNextPage = async (url: string) => {
-    if (!url) return;
+    if (!url || shouldStopScraping) return;
     
     setIsLoading(true);
     try {
@@ -44,12 +54,25 @@ export default function ZenScraper() {
         description: `Added ${items.length} new items from page ${scrapedPages + 1}`,
       });
 
+      // Check if we should stop scraping
+      if (shouldStopScraping) {
+        setShouldStopScraping(false);
+        setIsLoading(false);
+        toast({
+          title: "Scraping stopped",
+          description: `Completed ${scrapedPages + 1} pages before stopping`,
+        });
+        return;
+      }
+
       // Automatically scrape next page if available
       if (morePages && newNextPageUrl) {
         // Add a small delay to avoid overwhelming the server
         setTimeout(() => {
           handleScrapeNextPage(newNextPageUrl);
         }, 2000); // 2 second delay between pages
+      } else {
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Scraping error:', error);
@@ -58,12 +81,14 @@ export default function ZenScraper() {
         description: "Failed to scrape the next page",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
 
   const handleInitialScrape = async (url: string) => {
+    // Reset the stop flag when starting a new scrape
+    setShouldStopScraping(false);
+    
     setIsLoading(true);
     setResults([]);
     setFilteredResults([]);
@@ -92,11 +117,20 @@ export default function ZenScraper() {
         description: `Found ${items.length} items on the first page`,
       });
 
+      // Check if we should stop scraping
+      if (shouldStopScraping) {
+        setShouldStopScraping(false);
+        setIsLoading(false);
+        return;
+      }
+
       // Automatically start scraping next pages if available
       if (morePages && newNextPageUrl) {
         setTimeout(() => {
           handleScrapeNextPage(newNextPageUrl);
         }, 2000); // 2 second delay before starting next page
+      } else {
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Scraping error:', error);
@@ -105,7 +139,6 @@ export default function ZenScraper() {
         description: "Failed to scrape the category",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };
@@ -116,6 +149,7 @@ export default function ZenScraper() {
       
       <ScrapeForm 
         onScrapeStart={handleInitialScrape}
+        onScrapeStop={handleStopScraping}
         isLoading={isLoading}
         currentPage={scrapedPages}
       />

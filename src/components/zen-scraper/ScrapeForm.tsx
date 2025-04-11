@@ -1,17 +1,19 @@
+
 import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import { Loader2, SquareX } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface ScrapeFormProps {
   onScrapeStart: (url: string) => Promise<void>;
+  onScrapeStop: () => void;
   isLoading: boolean;
   currentPage: number;
 }
 
-export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeFormProps) => {
+export const ScrapeForm = ({ onScrapeStart, onScrapeStop, isLoading, currentPage }: ScrapeFormProps) => {
   const [url, setUrl] = useState('');
   const { toast } = useToast();
 
@@ -26,6 +28,14 @@ export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeForm
       return;
     }
     await onScrapeStart(url);
+  };
+
+  const handleStopScraping = () => {
+    onScrapeStop();
+    toast({
+      title: "Scraping stopped",
+      description: "The scraping process has been stopped",
+    });
   };
 
   return (
@@ -46,20 +56,34 @@ export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeForm
           />
         </div>
         
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="w-full"
-        >
-          {isLoading ? (
-            <div className="flex items-center space-x-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Scraping page {currentPage}...</span>
-            </div>
-          ) : (
-            "Start Scraping"
+        <div className="flex gap-2">
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="flex-1"
+          >
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Scraping page {currentPage}...</span>
+              </div>
+            ) : (
+              "Start Scraping"
+            )}
+          </Button>
+          
+          {isLoading && (
+            <Button 
+              type="button" 
+              variant="destructive" 
+              onClick={handleStopScraping}
+              className="flex items-center gap-2"
+            >
+              <SquareX className="h-4 w-4" />
+              <span>Stop Scraping</span>
+            </Button>
           )}
-        </Button>
+        </div>
       </form>
     </Card>
   );
