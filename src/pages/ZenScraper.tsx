@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
 import { ZenScraperService, ScrapedItem } from '@/services/zenScraper';
@@ -15,6 +16,7 @@ export default function ZenScraper() {
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
   const [nextPageUrl, setNextPageUrl] = useState<string | null>(null);
   const [hasMorePages, setHasMorePages] = useState(false);
+  const [maxPages, setMaxPages] = useState<number | null>(null);
 
   const handleSort = (column: keyof ScrapedItem) => {
     if (sortColumn === column) {
@@ -27,6 +29,16 @@ export default function ZenScraper() {
 
   const handleScrapeNextPage = async (url: string) => {
     if (!url) return;
+    
+    // Check if we've reached the max pages limit
+    if (maxPages !== null && scrapedPages >= maxPages) {
+      toast({
+        title: "Scraping complete",
+        description: `Reached the limit of ${maxPages} pages`,
+      });
+      setIsLoading(false);
+      return;
+    }
     
     setIsLoading(true);
     try {
@@ -44,12 +56,18 @@ export default function ZenScraper() {
         description: `Added ${items.length} new items from page ${scrapedPages + 1}`,
       });
 
-      // Automatically scrape next page if available
-      if (morePages && newNextPageUrl) {
+      // Automatically scrape next page if available and we haven't reached max pages
+      if (morePages && newNextPageUrl && (maxPages === null || scrapedPages + 1 < maxPages)) {
         // Add a small delay to avoid overwhelming the server
         setTimeout(() => {
           handleScrapeNextPage(newNextPageUrl);
         }, 2000); // 2 second delay between pages
+      } else if (maxPages !== null && scrapedPages + 1 >= maxPages) {
+        toast({
+          title: "Scraping complete",
+          description: `Reached the limit of ${maxPages} pages`,
+        });
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Scraping error:', error);
@@ -59,17 +77,20 @@ export default function ZenScraper() {
         variant: "destructive",
       });
     } finally {
-      setIsLoading(false);
+      if ((maxPages !== null && scrapedPages + 1 >= maxPages) || !hasMorePages) {
+        setIsLoading(false);
+      }
     }
   };
 
-  const handleInitialScrape = async (url: string) => {
+  const handleInitialScrape = async (url: string, pagesLimit: number | null) => {
     setIsLoading(true);
     setResults([]);
     setFilteredResults([]);
     setScrapedPages(0);
     setNextPageUrl(null);
     setHasMorePages(false);
+    setMaxPages(pagesLimit);
 
     try {
       // Ensure we're using the /en/ version of the URL for the first page
@@ -92,11 +113,13 @@ export default function ZenScraper() {
         description: `Found ${items.length} items on the first page`,
       });
 
-      // Automatically start scraping next pages if available
-      if (morePages && newNextPageUrl) {
+      // Automatically start scraping next pages if available and if we haven't reached the limit
+      if (morePages && newNextPageUrl && (pagesLimit === null || 1 < pagesLimit)) {
         setTimeout(() => {
           handleScrapeNextPage(newNextPageUrl);
         }, 2000); // 2 second delay before starting next page
+      } else {
+        setIsLoading(false);
       }
     } catch (error) {
       console.error('Scraping error:', error);
@@ -105,7 +128,6 @@ export default function ZenScraper() {
         description: "Failed to scrape the category",
         variant: "destructive",
       });
-    } finally {
       setIsLoading(false);
     }
   };

@@ -1,23 +1,35 @@
+
 import { useState } from 'react';
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel } from '@/components/ui/form';
+import { useForm } from 'react-hook-form';
 
 interface ScrapeFormProps {
-  onScrapeStart: (url: string) => Promise<void>;
+  onScrapeStart: (url: string, maxPages: number | null) => Promise<void>;
   isLoading: boolean;
   currentPage: number;
 }
 
-export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeFormProps) => {
-  const [url, setUrl] = useState('');
-  const { toast } = useToast();
+interface ScrapeFormValues {
+  url: string;
+  maxPages: string;
+}
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!url.includes('zenmarket.jp')) {
+export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeFormProps) => {
+  const { toast } = useToast();
+  const form = useForm<ScrapeFormValues>({
+    defaultValues: {
+      url: '',
+      maxPages: ''
+    }
+  });
+
+  const handleSubmit = async (values: ScrapeFormValues) => {
+    if (!values.url.includes('zenmarket.jp')) {
       toast({
         title: "Invalid URL",
         description: "Please enter a valid Zenmarket category URL",
@@ -25,42 +37,70 @@ export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeForm
       });
       return;
     }
-    await onScrapeStart(url);
+
+    const maxPages = values.maxPages ? parseInt(values.maxPages) : null;
+    await onScrapeStart(values.url, maxPages);
   };
 
   return (
     <Card className="p-6 mb-6">
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <label htmlFor="url" className="text-sm font-medium">
-            Category URL
-          </label>
-          <Input
-            id="url"
-            type="url"
-            placeholder="https://zenmarket.jp/en/yahoo.aspx?c=2084229142"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            className="w-full"
-            required
+      <Form {...form}>
+        <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+          <FormField
+            control={form.control}
+            name="url"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Category URL</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="url" 
+                    placeholder="https://zenmarket.jp/en/yahoo.aspx?c=2084229142" 
+                    required
+                    {...field}
+                  />
+                </FormControl>
+              </FormItem>
+            )}
           />
-        </div>
-        
-        <Button
-          type="submit"
-          disabled={isLoading}
-          className="w-full"
-        >
-          {isLoading ? (
-            <div className="flex items-center space-x-2">
-              <Loader2 className="h-4 w-4 animate-spin" />
-              <span>Scraping page {currentPage}...</span>
-            </div>
-          ) : (
-            "Start Scraping"
-          )}
-        </Button>
-      </form>
+          
+          <FormField
+            control={form.control}
+            name="maxPages"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Max Pages (optional)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    min="1"
+                    placeholder="Leave empty to scrape all pages"
+                    {...field}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Limit the number of pages to scrape
+                </FormDescription>
+              </FormItem>
+            )}
+          />
+          
+          <Button
+            type="submit"
+            disabled={isLoading}
+            className="w-full"
+          >
+            {isLoading ? (
+              <div className="flex items-center space-x-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span>Scraping page {currentPage}...</span>
+              </div>
+            ) : (
+              "Start Scraping"
+            )}
+          </Button>
+        </form>
+      </Form>
     </Card>
   );
 };
