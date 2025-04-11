@@ -62,11 +62,19 @@ export default function ZenScraper() {
         setTimeout(() => {
           handleScrapeNextPage(newNextPageUrl);
         }, 2000); // 2 second delay between pages
-      } else if (maxPages !== null && scrapedPages + 1 >= maxPages) {
-        toast({
-          title: "Scraping complete",
-          description: `Reached the limit of ${maxPages} pages`,
-        });
+      } else {
+        // Stop scraping if we've reached max pages or there are no more pages
+        if (maxPages !== null && scrapedPages + 1 >= maxPages) {
+          toast({
+            title: "Scraping complete",
+            description: `Reached the limit of ${maxPages} pages`,
+          });
+        } else if (!morePages) {
+          toast({
+            title: "Scraping complete",
+            description: "No more pages available",
+          });
+        }
         setIsLoading(false);
       }
     } catch (error) {
@@ -76,14 +84,12 @@ export default function ZenScraper() {
         description: "Failed to scrape the next page",
         variant: "destructive",
       });
-    } finally {
-      if ((maxPages !== null && scrapedPages + 1 >= maxPages) || !hasMorePages) {
-        setIsLoading(false);
-      }
+      setIsLoading(false);
     }
   };
 
   const handleInitialScrape = async (url: string, pagesLimit: number | null) => {
+    // Reset all state variables
     setIsLoading(true);
     setResults([]);
     setFilteredResults([]);
@@ -113,12 +119,23 @@ export default function ZenScraper() {
         description: `Found ${items.length} items on the first page`,
       });
 
-      // Automatically start scraping next pages if available and if we haven't reached the limit
+      // Only continue if we haven't reached the page limit (1 < pagesLimit)
       if (morePages && newNextPageUrl && (pagesLimit === null || 1 < pagesLimit)) {
         setTimeout(() => {
           handleScrapeNextPage(newNextPageUrl);
         }, 2000); // 2 second delay before starting next page
       } else {
+        if (pagesLimit !== null && pagesLimit <= 1) {
+          toast({
+            title: "Scraping complete",
+            description: `Reached the limit of ${pagesLimit} pages`,
+          });
+        } else if (!morePages) {
+          toast({
+            title: "Scraping complete",
+            description: "No more pages available",
+          });
+        }
         setIsLoading(false);
       }
     } catch (error) {

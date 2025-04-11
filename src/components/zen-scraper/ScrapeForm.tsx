@@ -38,7 +38,23 @@ export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeForm
       return;
     }
 
-    const maxPages = values.maxPages ? parseInt(values.maxPages) : null;
+    // Properly parse the maxPages value
+    let maxPages: number | null = null;
+    if (values.maxPages && values.maxPages.trim() !== '') {
+      const parsedValue = parseInt(values.maxPages);
+      if (!isNaN(parsedValue) && parsedValue > 0) {
+        maxPages = parsedValue;
+      } else {
+        toast({
+          title: "Invalid Max Pages",
+          description: "Please enter a valid positive number for Max Pages",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+
+    console.log('Starting scrape with max pages:', maxPages);
     await onScrapeStart(values.url, maxPages);
   };
 
@@ -57,6 +73,7 @@ export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeForm
                     type="url" 
                     placeholder="https://zenmarket.jp/en/yahoo.aspx?c=2084229142" 
                     required
+                    disabled={isLoading}
                     {...field}
                   />
                 </FormControl>
@@ -75,6 +92,7 @@ export const ScrapeForm = ({ onScrapeStart, isLoading, currentPage }: ScrapeForm
                     type="number" 
                     min="1"
                     placeholder="Leave empty to scrape all pages"
+                    disabled={isLoading}
                     {...field}
                   />
                 </FormControl>
